@@ -1,3 +1,5 @@
+'use client';
+
 /**
  * MappingStudio (Step 2)
  * ======================
