@@ -12,6 +12,7 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import GestureGallery from "@/components/GestureGallery";
 import MappingStudio from "@/components/MappingStudio";
 import GifRecorder from "@/components/GifRecorder";
+import UserInfoForm from "@/components/UserInfoForm";
 import { generateSessionId, getSessionFromURL, getConditionFromURL } from "@/lib/session";
 import { logEvent } from "@/lib/logger";
 
@@ -23,6 +24,8 @@ export default function App() {
   const initialStep = typeof window !== 'undefined' && window.location.hash === "#recorder" ? 0 : 1;
   const [step, setStep] = useState(initialStep);
   const [sessionId, setSessionId] = useState(null);
+  const [userName, setUserName] = useState(null);
+  const [submitted, setSubmitted] = useState(false);
   const [analysisData, setAnalysisData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [mappings, setMappings] = useState({
@@ -141,6 +144,28 @@ export default function App() {
     }
   }, []);
 
+  const handleUserInfoSubmit = useCallback((name) => {
+    setUserName(name);
+    if (sessionId) {
+      logEvent(sessionId, 'user_info_submitted', {
+        userName: name,
+        timestamp: Date.now(),
+      });
+    }
+  }, [sessionId]);
+
+  const handleFinalSubmit = useCallback(() => {
+    setSubmitted(true);
+    if (sessionId) {
+      logEvent(sessionId, 'final_submit', {
+        userName,
+        mappings,
+        customArmPath,
+        timestamp: Date.now(),
+      });
+    }
+  }, [sessionId, userName, mappings, customArmPath]);
+
   if (loading) {
     return (
       <div style={styles.loadingScreen}>
@@ -151,6 +176,11 @@ export default function App() {
 
   return (
     <div style={styles.app}>
+      {/* User info form (shown before start) */}
+      {!userName && step !== 0 && (
+        <UserInfoForm onSubmit={handleUserInfoSubmit} />
+      )}
+
       {/* Hidden audio element */}
       <audio ref={audioRef} src={AUDIO_URL} preload="auto" />
 
@@ -190,21 +220,42 @@ export default function App() {
           <GestureGallery analysisData={analysisData} />
         )}
         {step === 2 && (
-          <MappingStudio
-            mappings={mappings}
-            setMapping={setMapping}
-            setIntensity={setIntensity}
-            analysisData={analysisData}
-            audioRef={audioRef}
-            isPlaying={isPlaying}
-            onPlay={handlePlay}
-            onPause={handlePause}
-            onReset={handleReset}
-            musicTime={musicTime}
-            customArmPath={customArmPath}
-            onCustomArmPathChange={setCustomArmPath}
-            sessionId={sessionId}
-          />
+          <>
+            <MappingStudio
+              mappings={mappings}
+              setMapping={setMapping}
+              setIntensity={setIntensity}
+              analysisData={analysisData}
+              audioRef={audioRef}
+              isPlaying={isPlaying}
+              onPlay={handlePlay}
+              onPause={handlePause}
+              onReset={handleReset}
+              musicTime={musicTime}
+              customArmPath={customArmPath}
+              onCustomArmPathChange={setCustomArmPath}
+              sessionId={sessionId}
+            />
+
+            {/* Final submission section */}
+            <div style={styles.submitSection}>
+              <button
+                style={{
+                  ...styles.finalSubmitBtn,
+                  ...(submitted ? styles.finalSubmitBtnSubmitted : {}),
+                }}
+                onClick={handleFinalSubmit}
+                disabled={submitted}
+              >
+                {submitted ? '✓ Submitted' : 'Submit My Mappings'}
+              </button>
+              {submitted && (
+                <p style={styles.thankYou}>
+                  Thank you! Your responses have been recorded.
+                </p>
+              )}
+            </div>
+          </>
         )}
       </main>
     </div>
@@ -245,4 +296,38 @@ const styles = {
   },
   stepDivider: { width: 32, height: 1, background: "#44403c" },
   main: { maxWidth: 1100, margin: "0 auto", padding: "0 32px 80px" },
+  submitSection: {
+    marginTop: 64,
+    padding: "40px",
+    background: "#fff",
+    borderRadius: 16,
+    boxShadow: "0 4px 20px rgba(0,0,0,0.08)",
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+    gap: 16,
+  },
+  finalSubmitBtn: {
+    padding: "16px 48px",
+    fontSize: 18,
+    fontWeight: 700,
+    background: "#f59e0b",
+    color: "#fff",
+    border: "none",
+    borderRadius: 12,
+    cursor: "pointer",
+    transition: "all 0.2s",
+    boxShadow: "0 4px 12px rgba(245, 158, 11, 0.3)",
+  },
+  finalSubmitBtnSubmitted: {
+    background: "#10b981",
+    cursor: "default",
+    boxShadow: "0 4px 12px rgba(16, 185, 129, 0.3)",
+  },
+  thankYou: {
+    fontSize: 15,
+    color: "#10b981",
+    margin: 0,
+    fontWeight: 600,
+  },
 };

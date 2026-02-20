@@ -72,6 +72,35 @@ export async function POST(request) {
       }
     }
 
+    // Handle user_info_submitted: update session with user name
+    if (eventType === 'user_info_submitted') {
+      const { error: updateError } = await supabase
+        .from('sessions')
+        .update({ user_name: data?.userName })
+        .eq('id', sessionId);
+
+      if (updateError) {
+        console.error('[API] User name update error:', updateError);
+        // Don't throw - allow event to be logged even if update fails
+      }
+    }
+
+    // Handle final_submit: mark session as submitted
+    if (eventType === 'final_submit') {
+      const { error: updateError } = await supabase
+        .from('sessions')
+        .update({
+          submitted: true,
+          submitted_at: timestamp,
+        })
+        .eq('id', sessionId);
+
+      if (updateError) {
+        console.error('[API] Final submit update error:', updateError);
+        // Don't throw - allow event to be logged even if update fails
+      }
+    }
+
     // Insert event record
     const { error: eventError } = await supabase
       .from('events')
