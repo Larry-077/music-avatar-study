@@ -7,18 +7,59 @@
  * All 7 effectors available for selection (not filtered).
  */
 
-import { useRef, useEffect } from "react";
+import { useRef, useEffect, useState } from "react";
 import CharacterCanvas from "./CharacterCanvas";
-import CombinedPreview from "./CombinedPreview";
 import CurveEditor from "./CurveEditor";
 import { EFFECTOR_INFO } from "./GestureGallery";
 import { logEvent } from "@/lib/logger";
 
+// NOTE: audioUrl and analysisUrl currently point to test3.wav/json as placeholders
+// These will be replaced with actual music clips later:
+// - volume_vivaldi_summer.wav/json
+// - pitch_bach_brandenburg.wav/json
+// - timbre_debussy_clair.wav/json
+// - beat_beethoven_fifth.wav/json
 const MUSIC_ELEMENTS = [
-  { id: "volume", name: "Volume", description: "How loud or quiet the music is", type: "continuous", color: "#f59e0b" },
-  { id: "pitch", name: "Pitch", description: "How high or low the musical notes are", type: "continuous", color: "#3b82f6" },
-  { id: "timbre", name: "Timbre", description: "The brightness or darkness of the sound", type: "continuous", color: "#8b5cf6" },
-  { id: "beat", name: "Beat", description: "The rhythmic pulse of the music", type: "trigger", color: "#ef4444" },
+  {
+    id: "volume",
+    name: "Volume (音量)",
+    description: "音量的大小变化，从安静到响亮",
+    detailedDesc: "体验音量如何从响亮到安静的变化 - 像一场突如其来的夏日暴风雨",
+    audioUrl: "/assets/audio/test3.wav", // Placeholder
+    analysisUrl: "/assets/analysis/test3.json", // Placeholder
+    type: "continuous",
+    color: "#f59e0b"
+  },
+  {
+    id: "pitch",
+    name: "Pitch (音高)",
+    description: "旋律的高低起伏",
+    detailedDesc: "跟随旋律从低音爬升到高音 - 像一只鸟儿向天空飞翔",
+    audioUrl: "/assets/audio/test3.wav", // Placeholder
+    analysisUrl: "/assets/analysis/test3.json", // Placeholder
+    type: "continuous",
+    color: "#10b981"
+  },
+  {
+    id: "timbre",
+    name: "Timbre (音色)",
+    description: "声音的质感和色彩",
+    detailedDesc: "感受音色从明亮清澈到温暖柔和的变化 - 像月光在水面的波纹",
+    audioUrl: "/assets/audio/test3.wav", // Placeholder
+    analysisUrl: "/assets/analysis/test3.json", // Placeholder
+    type: "continuous",
+    color: "#8b5cf6"
+  },
+  {
+    id: "beat",
+    name: "Beat (节拍)",
+    description: "音乐的脉搏和律动",
+    detailedDesc: "跟随强烈的节拍脉动 - 像心跳一样有力",
+    audioUrl: "/assets/audio/test3.wav", // Placeholder
+    analysisUrl: "/assets/analysis/test3.json", // Placeholder
+    type: "trigger",
+    color: "#ef4444"
+  },
 ];
 
 const CONTINUOUS_EFFECTORS = Object.entries(EFFECTOR_INFO)
@@ -33,33 +74,10 @@ export default function MappingStudio({
   mappings,
   setMapping,
   setIntensity,
-  analysisData,
-  audioRef,
-  isPlaying,
-  onPlay,
-  onPause,
-  onReset,
-  musicTime,
   customArmPath,
   onCustomArmPathChange,
   sessionId,
 }) {
-  // Instrumented audio controls
-  const handlePlay = () => {
-    logEvent(sessionId, 'audio_play', { timestamp: Date.now() });
-    onPlay();
-  };
-
-  const handlePause = () => {
-    logEvent(sessionId, 'audio_pause', { currentTime: musicTime, timestamp: Date.now() });
-    onPause();
-  };
-
-  const handleReset = () => {
-    logEvent(sessionId, 'audio_reset', { timestamp: Date.now() });
-    onReset();
-  };
-
   // Instrumented setMapping
   const handleSetMapping = (elemId, effectorId) => {
     logEvent(sessionId, 'effector_selected', {
@@ -93,24 +111,8 @@ export default function MappingStudio({
       <div style={styles.sectionHeader}>
         <h2 style={styles.sectionTitle}>Map Movements to Music</h2>
         <p style={styles.sectionDesc}>
-          For each musical element below, choose which movement best represents it and adjust the intensity.
+          For each musical element below, listen to its unique audio clip, then choose which movement best represents it.
         </p>
-      </div>
-
-      {/* Audio Controls */}
-      <div style={styles.audioControls}>
-        <button style={styles.controlBtn} onClick={handlePlay} disabled={isPlaying}>
-          Play
-        </button>
-        <button style={styles.controlBtn} onClick={handlePause} disabled={!isPlaying}>
-          Pause
-        </button>
-        <button style={styles.controlBtn} onClick={handleReset}>
-          Reset
-        </button>
-        <span style={styles.timeDisplay}>
-          {formatTime(musicTime)}
-        </span>
       </div>
 
       {MUSIC_ELEMENTS.map((elem) => (
@@ -120,55 +122,75 @@ export default function MappingStudio({
           currentMapping={mappings[elem.id]}
           onSetEffector={(eid) => handleSetMapping(elem.id, eid)}
           onSetIntensity={(val) => handleSetIntensity(elem.id, val)}
-          analysisData={analysisData}
-          musicTime={musicTime}
-          isPlaying={isPlaying}
           customArmPath={customArmPath}
           onCustomArmPathChange={onCustomArmPathChange}
           sessionId={sessionId}
         />
       ))}
-
-      {/* Combined Preview */}
-      <div style={styles.combinedSection}>
-        <h3 style={styles.combinedTitle}>Combined Preview</h3>
-        <p style={styles.combinedDesc}>
-          This preview shows all your mappings working together with the actual music analysis.
-        </p>
-        <div style={styles.combinedCanvas}>
-          <CombinedPreview
-            mappings={mappings}
-            analysisData={analysisData}
-            width={320}
-            height={380}
-            musicTime={musicTime}
-            isPlaying={isPlaying}
-            customArmPath={customArmPath}
-          />
-        </div>
-
-        {/* Summary */}
-        <div style={styles.summaryGrid}>
-          {MUSIC_ELEMENTS.map((elem) => {
-            const m = mappings[elem.id];
-            const eff = m.effector ? EFFECTOR_INFO[m.effector] : null;
-            return (
-              <div key={elem.id} style={{ ...styles.summaryItem, borderLeftColor: elem.color }}>
-                <div style={styles.summaryLabel}>{elem.name}</div>
-                <div style={styles.summaryValue}>
-                  {eff ? `${eff.icon} ${eff.name}` : "—"}{" "}
-                  {eff && <span style={styles.summaryIntensity}>{Math.round(m.intensity * 100)}%</span>}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </div>
     </div>
   );
 }
 
-function MappingRow({ elem, currentMapping, onSetEffector, onSetIntensity, analysisData, musicTime, isPlaying, customArmPath, onCustomArmPathChange, sessionId }) {
+function MappingRow({ elem, currentMapping, onSetEffector, onSetIntensity, customArmPath, onCustomArmPathChange, sessionId }) {
+  // Independent audio state for this row
+  const audioRef = useRef(null);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [musicTime, setMusicTime] = useState(0);
+  const [analysisData, setAnalysisData] = useState(null);
+
+  // Load this row's analysis data
+  useEffect(() => {
+    fetch(elem.analysisUrl)
+      .then(res => res.json())
+      .then(data => setAnalysisData(data))
+      .catch(err => console.error(`Failed to load analysis for ${elem.id}:`, err));
+  }, [elem.analysisUrl, elem.id]);
+
+  // Track audio time
+  useEffect(() => {
+    if (!audioRef.current) return;
+    let rafId;
+    const updateTime = () => {
+      if (audioRef.current && isPlaying) {
+        setMusicTime(audioRef.current.currentTime);
+      }
+      rafId = requestAnimationFrame(updateTime);
+    };
+    rafId = requestAnimationFrame(updateTime);
+    return () => cancelAnimationFrame(rafId);
+  }, [isPlaying]);
+
+  // Audio controls with logging
+  const handlePlay = () => {
+    audioRef.current?.play();
+    setIsPlaying(true);
+    logEvent(sessionId, 'audio_play', {
+      musicElement: elem.id,
+      timestamp: Date.now(),
+    });
+  };
+
+  const handlePause = () => {
+    audioRef.current?.pause();
+    setIsPlaying(false);
+    logEvent(sessionId, 'audio_pause', {
+      musicElement: elem.id,
+      currentTime: audioRef.current?.currentTime || 0,
+      timestamp: Date.now(),
+    });
+  };
+
+  const handleReset = () => {
+    if (audioRef.current) {
+      audioRef.current.currentTime = 0;
+      setIsPlaying(false);
+    }
+    logEvent(sessionId, 'audio_reset', {
+      musicElement: elem.id,
+      timestamp: Date.now(),
+    });
+  };
+
   // Show ALL effectors (not filtered by Step 1 selection)
   const availableEffectors =
     elem.type === "trigger"
@@ -177,13 +199,53 @@ function MappingRow({ elem, currentMapping, onSetEffector, onSetIntensity, analy
 
   return (
     <div style={styles.mappingRow}>
-      {/* Left: Music Element Info */}
+      {/* Hidden audio element for this row */}
+      <audio ref={audioRef} src={elem.audioUrl} preload="metadata" />
+
+      {/* Left: Music Element Info + Audio Controls */}
       <div style={styles.mappingLeft}>
         <div style={{ ...styles.elemDot, background: elem.color }} />
-        <div>
-          <h4 style={styles.elemName}>{elem.name}</h4>
+        <div style={{ flex: 1 }}>
+          <h4 style={{ ...styles.elemName, color: elem.color }}>{elem.name}</h4>
           <p style={styles.elemDesc}>{elem.description}</p>
-          <SignalBar type={elem.id} analysisData={analysisData} width={140} height={18} color={elem.color} musicTime={musicTime} isPlaying={isPlaying} />
+          <p style={styles.elemDetailedDesc}>{elem.detailedDesc}</p>
+
+          {/* Row audio controls */}
+          <div style={styles.rowAudioControls}>
+            <button
+              style={{ ...styles.rowControlBtn, opacity: isPlaying ? 0.5 : 1 }}
+              onClick={handlePlay}
+              disabled={isPlaying}
+            >
+              ▶
+            </button>
+            <button
+              style={{ ...styles.rowControlBtn, opacity: !isPlaying ? 0.5 : 1 }}
+              onClick={handlePause}
+              disabled={!isPlaying}
+            >
+              ⏸
+            </button>
+            <button
+              style={styles.rowControlBtn}
+              onClick={handleReset}
+            >
+              ⏹
+            </button>
+            <span style={styles.rowTimeDisplay}>
+              {formatTime(musicTime)}
+            </span>
+          </div>
+
+          <SignalBar
+            type={elem.id}
+            analysisData={analysisData}
+            width={180}
+            height={18}
+            color={elem.color}
+            musicTime={musicTime}
+            isPlaying={isPlaying}
+          />
         </div>
       </div>
 
@@ -192,8 +254,8 @@ function MappingRow({ elem, currentMapping, onSetEffector, onSetIntensity, analy
         <div style={styles.previewFrame}>
           {currentMapping.effector ? (
             <CharacterCanvas
-              width={270}
-              height={345}
+              width={240}
+              height={300}
               analysisData={analysisData}
               effectorId={currentMapping.effector}
               musicType={elem.id}
@@ -339,31 +401,35 @@ const styles = {
   section: { paddingTop: 40 },
   sectionHeader: { marginBottom: 36 },
   sectionTitle: { fontSize: 28, fontWeight: 700, margin: 0, letterSpacing: "-0.02em" },
-  sectionDesc: { fontSize: 15, color: "#78716c", margin: "8px 0 0", maxWidth: 600, lineHeight: 1.6 },
-  audioControls: {
-    display: "flex", alignItems: "center", gap: 12, marginBottom: 24,
-    padding: "16px 20px", background: "#1c1917", borderRadius: 12,
-  },
-  controlBtn: {
-    padding: "8px 20px", fontSize: 13, fontWeight: 700, background: "#f59e0b",
-    color: "#fff", border: "none", borderRadius: 8, cursor: "pointer",
-  },
-  timeDisplay: {
-    fontSize: 16, fontWeight: 700, color: "#fafaf9", fontFamily: "monospace", marginLeft: "auto",
-  },
+  sectionDesc: { fontSize: 15, color: "#78716c", margin: "8px 0 0", maxWidth: 700, lineHeight: 1.6 },
   mappingRow: {
     display: "flex", gap: 24, alignItems: "flex-start",
-    padding: "28px 0", borderBottom: "1px solid #e7e5e4",
+    padding: "32px 0", borderBottom: "1px solid #e7e5e4",
   },
   mappingLeft: {
-    width: 180, flexShrink: 0, display: "flex", gap: 12, alignItems: "flex-start",
+    width: 240, flexShrink: 0, display: "flex", gap: 12, alignItems: "flex-start",
   },
   elemDot: { width: 10, height: 10, borderRadius: "50%", marginTop: 6, flexShrink: 0 },
-  elemName: { fontSize: 16, fontWeight: 700, margin: "0 0 2px" },
-  elemDesc: { fontSize: 12, color: "#a8a29e", margin: "0 0 8px", lineHeight: 1.4 },
+  elemName: { fontSize: 16, fontWeight: 700, margin: "0 0 4px" },
+  elemDesc: { fontSize: 13, color: "#78716c", margin: "0 0 2px", lineHeight: 1.4 },
+  elemDetailedDesc: { fontSize: 12, color: "#a8a29e", margin: "0 0 12px", lineHeight: 1.5, fontStyle: "italic" },
+  rowAudioControls: {
+    display: "flex", alignItems: "center", gap: 6, marginBottom: 10,
+    padding: "8px 10px", background: "#fafaf9", borderRadius: 8, border: "1px solid #e7e5e4",
+  },
+  rowControlBtn: {
+    padding: "6px 10px", fontSize: 13, fontWeight: 700,
+    background: "#fff", color: "#1c1917",
+    border: "1px solid #e7e5e4", borderRadius: 6, cursor: "pointer",
+    transition: "all 0.15s", minWidth: 32,
+  },
+  rowTimeDisplay: {
+    fontSize: 11, fontWeight: 600, color: "#78716c",
+    fontFamily: "monospace", marginLeft: "auto",
+  },
   mappingCenter: { flexShrink: 0 },
   previewFrame: {
-    width: 270, height: 345, background: "#fff", borderRadius: 14,
+    width: 240, height: 300, background: "#fff", borderRadius: 12,
     boxShadow: "0 2px 12px rgba(0,0,0,0.06)", overflow: "hidden",
     display: "flex", alignItems: "center", justifyContent: "center",
   },
@@ -384,25 +450,4 @@ const styles = {
   intensityWrap: { maxWidth: 280 },
   slider: { width: "100%", accentColor: "#f59e0b", height: 6 },
   sliderLabels: { display: "flex", justifyContent: "space-between", fontSize: 11, color: "#a8a29e", marginTop: 2 },
-  combinedSection: { marginTop: 56, textAlign: "center" },
-  combinedTitle: { fontSize: 22, fontWeight: 700, margin: "0 0 6px" },
-  combinedDesc: { fontSize: 14, color: "#78716c", margin: "0 0 24px" },
-  combinedCanvas: {
-    display: "inline-block", background: "#fff", borderRadius: 20,
-    boxShadow: "0 8px 40px rgba(0,0,0,0.08)", padding: 12, marginBottom: 32,
-  },
-  summaryGrid: {
-    display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12,
-    maxWidth: 700, margin: "0 auto",
-  },
-  summaryItem: {
-    background: "#fff", borderRadius: 10, padding: "12px 16px", textAlign: "left",
-    borderLeft: "3px solid", boxShadow: "0 2px 8px rgba(0,0,0,0.04)",
-  },
-  summaryLabel: {
-    fontSize: 11, fontWeight: 600, color: "#a8a29e", textTransform: "uppercase",
-    letterSpacing: "0.05em", marginBottom: 4,
-  },
-  summaryValue: { fontSize: 13, fontWeight: 600 },
-  summaryIntensity: { fontSize: 11, color: "#a8a29e", fontWeight: 400 },
 };

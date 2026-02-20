@@ -16,8 +16,8 @@ import UserInfoForm from "@/components/UserInfoForm";
 import { generateSessionId, getSessionFromURL, getConditionFromURL } from "@/lib/session";
 import { logEvent } from "@/lib/logger";
 
+// GestureGallery still needs global analysisData for demo purposes
 const ANALYSIS_URL = "/assets/analysis/test3.json";
-const AUDIO_URL = "/assets/audio/test3.wav";
 
 export default function App() {
   // Use #recorder in URL to access GIF recording tool
@@ -35,10 +35,6 @@ export default function App() {
     beat: { effector: null, intensity: 0.7 },
   });
   const [customArmPath, setCustomArmPath] = useState([]);
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [musicTime, setMusicTime] = useState(0);
-  const audioRef = useRef(null);
-  const timeUpdateRef = useRef(null);
   const sessionStartTime = useRef(null);
 
   // Initialize session ID and log session start
@@ -83,18 +79,6 @@ export default function App() {
       });
   }, []);
 
-  // Track audio time
-  useEffect(() => {
-    const update = () => {
-      if (audioRef.current && !audioRef.current.paused) {
-        setMusicTime(audioRef.current.currentTime);
-      }
-      timeUpdateRef.current = requestAnimationFrame(update);
-    };
-    timeUpdateRef.current = requestAnimationFrame(update);
-    return () => cancelAnimationFrame(timeUpdateRef.current);
-  }, []);
-
   // Log step changes
   const handleStepChange = useCallback((newStep) => {
     if (sessionId) {
@@ -119,29 +103,6 @@ export default function App() {
       ...prev,
       [elemId]: { ...prev[elemId], intensity: val },
     }));
-  }, []);
-
-  const handlePlay = useCallback(() => {
-    if (audioRef.current) {
-      audioRef.current.play();
-      setIsPlaying(true);
-    }
-  }, []);
-
-  const handlePause = useCallback(() => {
-    if (audioRef.current) {
-      audioRef.current.pause();
-      setIsPlaying(false);
-    }
-  }, []);
-
-  const handleReset = useCallback(() => {
-    if (audioRef.current) {
-      audioRef.current.pause();
-      audioRef.current.currentTime = 0;
-      setIsPlaying(false);
-      setMusicTime(0);
-    }
   }, []);
 
   const handleUserInfoSubmit = useCallback((name) => {
@@ -180,9 +141,6 @@ export default function App() {
       {!userName && step !== 0 && (
         <UserInfoForm onSubmit={handleUserInfoSubmit} />
       )}
-
-      {/* Hidden audio element */}
-      <audio ref={audioRef} src={AUDIO_URL} preload="auto" />
 
       {/* Header */}
       <header style={styles.header}>
@@ -225,13 +183,6 @@ export default function App() {
               mappings={mappings}
               setMapping={setMapping}
               setIntensity={setIntensity}
-              analysisData={analysisData}
-              audioRef={audioRef}
-              isPlaying={isPlaying}
-              onPlay={handlePlay}
-              onPause={handlePause}
-              onReset={handleReset}
-              musicTime={musicTime}
               customArmPath={customArmPath}
               onCustomArmPathChange={setCustomArmPath}
               sessionId={sessionId}
