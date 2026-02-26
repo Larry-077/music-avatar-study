@@ -112,7 +112,7 @@ export default function CombinedPreviewCanvas({
     const ctx = canvas.getContext('2d');
     const scale = Math.min(width / DESIGN_W, height / DESIGN_H);
     const offX  = (width  / scale - DESIGN_W) / 2;
-    const offY  = (height / scale - DESIGN_H) / 2;
+    const offY  = (height / scale - DESIGN_H) / 2 + 70; // nudge character toward vertical center
     let lastTime = performance.now();
 
     const animate = (now) => {

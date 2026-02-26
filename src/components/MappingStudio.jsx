@@ -80,7 +80,7 @@ export default function MappingStudio({
     beat:   null,
   });
 
-  // Combined preview audio state (uses volume.wav)
+  // Combined preview audio state (uses test3.wav)
   const combinedAudioRef = useRef(null);
   const [combinedPlaying, setCombinedPlaying] = useState(false);
   const [combinedTime, setCombinedTime] = useState(0);
@@ -211,7 +211,7 @@ export default function MappingStudio({
             <div style={styles.combinedCanvas}>
               <audio
                 ref={combinedAudioRef}
-                src="/assets/audio/volume.wav"
+                src="/assets/audio/test3.wav"
                 onEnded={() => setCombinedPlaying(false)}
               />
               <CombinedPreviewCanvas

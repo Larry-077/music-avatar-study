@@ -19,7 +19,7 @@ const MUSIC_CLIPS = [
     audioUrl: "/assets/audio/volume.wav",
     analysisUrl: "/assets/analysis/volume.json",
     desc: "Changes in loudness",
-    lowLabel: "Quiet 🤫", highLabel: "Loud 📢",
+    lowLabel: "Quiet ", highLabel: "Loud ",
     richDesc: "Volume (loudness) is the simplest and most primal musical feature. It reflects the amplitude of sound waves — how much air is moving. A sudden crescendo signals urgency or excitement; a fade-out signals calm. In music, composers shape emotion by controlling dynamics from pianissimo (pp) to fortissimo (ff). When you move to music, your body naturally responds to loudness: you crouch in silence and leap in a climax.",
   },
   {
@@ -27,7 +27,7 @@ const MUSIC_CLIPS = [
     audioUrl: "/assets/audio/pitch.wav",
     analysisUrl: "/assets/analysis/pitch.json",
     desc: "Rise and fall of notes",
-    lowLabel: "Low notes 🎸", highLabel: "High notes 🎵",
+    lowLabel: "Low notes ", highLabel: "High notes ",
     richDesc: "Pitch is the frequency of a sound wave — how many cycles per second (Hz). Human hearing spans roughly 20–20,000 Hz. In music, pitch rises and falls with melody. High pitches often feel light or tense; low pitches feel grounded or heavy. Research on cross-modal perception shows people instinctively map high pitches to elevated positions and small, light objects — which is why high notes often pair naturally with upward arm gestures.",
   },
   {
@@ -35,7 +35,7 @@ const MUSIC_CLIPS = [
     audioUrl: "/assets/audio/timbre.wav",
     analysisUrl: "/assets/analysis/timbre.json",
     desc: "Texture and color of sound",
-    lowLabel: "Warm / Mellow 🎷", highLabel: "Bright / Sharp 🎺",
+    lowLabel: "Warm / Mellow ", highLabel: "Bright / Sharp ",
     richDesc: "Timbre (tone color) is what makes a violin sound different from a flute playing the same note. It is defined by the mix of overtones (harmonics) above the fundamental frequency. Spectral brightness — energy concentrated in high harmonics — creates a sharp, cutting sound; a low-energy harmonic profile produces a warm, mellow tone. Electronically, timbre is measured via spectral centroid: where the \"center of mass\" of the spectrum lies.",
   },
   {
@@ -43,7 +43,7 @@ const MUSIC_CLIPS = [
     audioUrl: "/assets/audio/beat.wav",
     analysisUrl: "/assets/analysis/beat.json",
     desc: "Rhythmic pulse",
-    lowLabel: "Steady pulse 🥁", highLabel: "Driving pulse ⚡",
+    lowLabel: "Steady pulse ", highLabel: "Driving pulse ",
     richDesc: "The beat is music's rhythmic skeleton — the regular pulse you tap your foot to. Beats are detected as transient energy spikes in the audio signal. Strong, regular beats create drive and momentum; syncopated or irregular beats create surprise and tension. In dance, the beat is fundamental: every step, nod, and pulse aligns to it. Beat-driven animations use onset detection to trigger discrete movement events rather than continuous interpolation.",
   },
 ];
