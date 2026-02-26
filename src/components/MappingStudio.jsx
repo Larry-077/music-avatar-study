@@ -1,62 +1,57 @@
 'use client';
 
 /**
- * MappingStudio (Step 2)
+ * MappingStudio (Step 3)
  * ======================
  * Map movements to music elements with intensity control.
- * All 7 effectors available for selection (not filtered).
+ * Each row has a "✓ Confirm" button once an effector is chosen.
+ * After all 4 are confirmed, the Combined Preview section activates.
  */
 
-import { useRef, useEffect, useState } from "react";
+import { useRef, useEffect, useState, useCallback } from "react";
 import CharacterCanvas from "./CharacterCanvas";
-import CurveEditor from "./CurveEditor";
+import CombinedPreviewCanvas from "./CombinedPreviewCanvas";
 import { EFFECTOR_INFO } from "./GestureGallery";
 import { logEvent } from "@/lib/logger";
 
-// NOTE: audioUrl and analysisUrl currently point to test3.wav/json as placeholders
-// These will be replaced with actual music clips later:
-// - volume_vivaldi_summer.wav/json
-// - pitch_bach_brandenburg.wav/json
-// - timbre_debussy_clair.wav/json
-// - beat_beethoven_fifth.wav/json
 const MUSIC_ELEMENTS = [
   {
     id: "volume",
-    name: "Volume (音量)",
-    description: "音量的大小变化，从安静到响亮",
-    detailedDesc: "体验音量如何从响亮到安静的变化 - 像一场突如其来的夏日暴风雨",
-    audioUrl: "/assets/audio/test3.wav", // Placeholder
-    analysisUrl: "/assets/analysis/test3.json", // Placeholder
+    name: "Volume",
+    description: "Changes in loudness, from quiet to loud",
+    detailedDesc: "Experience how volume shifts from loud to quiet",
+    audioUrl: "/assets/audio/volume.wav",
+    analysisUrl: "/assets/analysis/volume.json",
     type: "continuous",
     color: "#f59e0b"
   },
   {
     id: "pitch",
-    name: "Pitch (音高)",
-    description: "旋律的高低起伏",
-    detailedDesc: "跟随旋律从低音爬升到高音 - 像一只鸟儿向天空飞翔",
-    audioUrl: "/assets/audio/test3.wav", // Placeholder
-    analysisUrl: "/assets/analysis/test3.json", // Placeholder
+    name: "Pitch",
+    description: "The rise and fall of musical notes",
+    detailedDesc: "Follow the melody as it climbs from low to high",
+    audioUrl: "/assets/audio/pitch.wav",
+    analysisUrl: "/assets/analysis/pitch.json",
     type: "continuous",
     color: "#10b981"
   },
   {
     id: "timbre",
-    name: "Timbre (音色)",
-    description: "声音的质感和色彩",
-    detailedDesc: "感受音色从明亮清澈到温暖柔和的变化 - 像月光在水面的波纹",
-    audioUrl: "/assets/audio/test3.wav", // Placeholder
-    analysisUrl: "/assets/analysis/test3.json", // Placeholder
+    name: "Timbre",
+    description: "The texture and color of sound",
+    detailedDesc: "Feel the timbre shift from bright and clear to warm and soft",
+    audioUrl: "/assets/audio/timbre.wav",
+    analysisUrl: "/assets/analysis/timbre.json",
     type: "continuous",
     color: "#8b5cf6"
   },
   {
     id: "beat",
-    name: "Beat (节拍)",
-    description: "音乐的脉搏和律动",
-    detailedDesc: "跟随强烈的节拍脉动 - 像心跳一样有力",
-    audioUrl: "/assets/audio/test3.wav", // Placeholder
-    analysisUrl: "/assets/analysis/test3.json", // Placeholder
+    name: "Beat",
+    description: "The pulse and rhythm of music",
+    detailedDesc: "Follow the strong rhythmic pulse",
+    audioUrl: "/assets/audio/beat.wav",
+    analysisUrl: "/assets/analysis/beat.json",
     type: "trigger",
     color: "#ef4444"
   },
@@ -74,10 +69,38 @@ export default function MappingStudio({
   mappings,
   setMapping,
   setIntensity,
-  customArmPath,
-  onCustomArmPathChange,
   sessionId,
+  customKeyframePose = null,
 }) {
+  // Tracks which rows the user has confirmed
+  const [confirmedMappings, setConfirmedMappings] = useState({
+    volume: null,
+    pitch:  null,
+    timbre: null,
+    beat:   null,
+  });
+
+  // Combined preview audio state (uses volume.wav)
+  const combinedAudioRef = useRef(null);
+  const [combinedPlaying, setCombinedPlaying] = useState(false);
+  const [combinedTime, setCombinedTime] = useState(0);
+  const combinedRafRef = useRef(null);
+
+  // Track combined audio time
+  useEffect(() => {
+    const tick = () => {
+      if (combinedAudioRef.current) {
+        setCombinedTime(combinedAudioRef.current.currentTime);
+      }
+      combinedRafRef.current = requestAnimationFrame(tick);
+    };
+    combinedRafRef.current = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(combinedRafRef.current);
+  }, []);
+
+  const confirmedCount = Object.values(confirmedMappings).filter(Boolean).length;
+  const allConfirmed = confirmedCount === 4;
+
   // Instrumented setMapping
   const handleSetMapping = (elemId, effectorId) => {
     logEvent(sessionId, 'effector_selected', {
@@ -86,17 +109,17 @@ export default function MappingStudio({
       timestamp: Date.now(),
     });
     setMapping(elemId, effectorId);
+    // Un-confirm if user changes their selection
+    if (confirmedMappings[elemId]) {
+      setConfirmedMappings(prev => ({ ...prev, [elemId]: null }));
+    }
   };
 
-  // Instrumented setIntensity (debounced to avoid too many events)
+  // Instrumented setIntensity (debounced)
   const intensityTimeoutRef = useRef(null);
   const handleSetIntensity = (elemId, value) => {
     setIntensity(elemId, value);
-
-    // Debounce logging by 500ms
-    if (intensityTimeoutRef.current) {
-      clearTimeout(intensityTimeoutRef.current);
-    }
+    if (intensityTimeoutRef.current) clearTimeout(intensityTimeoutRef.current);
     intensityTimeoutRef.current = setTimeout(() => {
       logEvent(sessionId, 'intensity_changed', {
         musicElement: elemId,
@@ -106,12 +129,44 @@ export default function MappingStudio({
     }, 500);
   };
 
+  const handleConfirm = useCallback((elemId) => {
+    const m = mappings[elemId];
+    if (!m?.effector) return;
+    setConfirmedMappings(prev => ({
+      ...prev,
+      [elemId]: { effector: m.effector, intensity: m.intensity },
+    }));
+    logEvent(sessionId, 'effector_confirmed', {
+      musicElement: elemId,
+      effector: m.effector,
+      intensity: m.intensity,
+      timestamp: Date.now(),
+    });
+  }, [mappings, sessionId]);
+
+  const handleCombinedPlay = () => {
+    combinedAudioRef.current?.play();
+    setCombinedPlaying(true);
+  };
+  const handleCombinedPause = () => {
+    combinedAudioRef.current?.pause();
+    setCombinedPlaying(false);
+  };
+  const handleCombinedReset = () => {
+    if (combinedAudioRef.current) {
+      combinedAudioRef.current.currentTime = 0;
+      combinedAudioRef.current.pause();
+    }
+    setCombinedPlaying(false);
+  };
+
   return (
     <div style={styles.section}>
       <div style={styles.sectionHeader}>
         <h2 style={styles.sectionTitle}>Map Movements to Music</h2>
         <p style={styles.sectionDesc}>
-          For each musical element below, listen to its unique audio clip, then choose which movement best represents it.
+          For each musical element below, listen to its unique audio clip, then choose which
+          movement best represents it. Confirm each mapping when you're happy with it.
         </p>
       </div>
 
@@ -120,25 +175,104 @@ export default function MappingStudio({
           key={elem.id}
           elem={elem}
           currentMapping={mappings[elem.id]}
+          confirmed={!!confirmedMappings[elem.id]}
           onSetEffector={(eid) => handleSetMapping(elem.id, eid)}
           onSetIntensity={(val) => handleSetIntensity(elem.id, val)}
-          customArmPath={customArmPath}
-          onCustomArmPathChange={onCustomArmPathChange}
+          onConfirm={() => handleConfirm(elem.id)}
           sessionId={sessionId}
+          customKeyframePose={customKeyframePose}
         />
       ))}
+
+      {/* ── Combined Preview ─────────────────────────────── */}
+      <div style={styles.combinedSection}>
+        <div style={styles.combinedHeader}>
+          <div>
+            <h3 style={styles.combinedTitle}>Combined Preview</h3>
+            <p style={styles.combinedDesc}>
+              See all your confirmed mappings at once, driven by the same music.
+            </p>
+          </div>
+          <div style={{
+            ...styles.confirmBadge,
+            background: allConfirmed ? '#10b981' : '#f59e0b',
+          }}>
+            {confirmedCount} / 4 confirmed
+          </div>
+        </div>
+
+        {confirmedCount === 0 ? (
+          <div style={styles.combinedEmpty}>
+            Confirm at least one mapping above to activate the combined preview.
+          </div>
+        ) : (
+          <div style={styles.combinedLayout}>
+            {/* Large character canvas */}
+            <div style={styles.combinedCanvas}>
+              <audio
+                ref={combinedAudioRef}
+                src="/assets/audio/volume.wav"
+                onEnded={() => setCombinedPlaying(false)}
+              />
+              <CombinedPreviewCanvas
+                confirmedMappings={confirmedMappings}
+                customKeyframePose={customKeyframePose}
+                externalTime={combinedTime}
+                playing={combinedPlaying}
+                width={380}
+                height={440}
+              />
+              {/* Audio controls */}
+              <div style={styles.combinedControls}>
+                <button style={styles.combinedBtn} onClick={handleCombinedPlay} disabled={combinedPlaying}>▶</button>
+                <button style={styles.combinedBtn} onClick={handleCombinedPause} disabled={!combinedPlaying}>⏸</button>
+                <button style={styles.combinedBtn} onClick={handleCombinedReset}>⏹</button>
+                <span style={styles.combinedTime}>{fmtTime(combinedTime)}</span>
+              </div>
+            </div>
+
+            {/* Legend of confirmed mappings */}
+            <div style={styles.combinedLegend}>
+              <p style={styles.legendTitle}>Active mappings</p>
+              {MUSIC_ELEMENTS.map(elem => {
+                const cm = confirmedMappings[elem.id];
+                if (!cm) return null;
+                const eff = cm.effector === 'custom_pose'
+                  ? { icon: '✏️', name: 'My Custom Design' }
+                  : EFFECTOR_INFO[cm.effector];
+                return (
+                  <div key={elem.id} style={styles.legendRow}>
+                    <span style={{ ...styles.legendDot, background: elem.color }} />
+                    <span style={styles.legendElem}>{elem.name}</span>
+                    <span style={styles.legendArrow}>→</span>
+                    <span style={styles.legendEff}>{eff?.icon} {eff?.name}</span>
+                    <span style={styles.legendIntensity}>{Math.round(cm.intensity * 100)}%</span>
+                  </div>
+                );
+              })}
+              {!allConfirmed && (
+                <p style={styles.legendHint}>
+                  Confirm the remaining {4 - confirmedCount} mapping{4 - confirmedCount > 1 ? 's' : ''} to complete your design.
+                </p>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
 
-function MappingRow({ elem, currentMapping, onSetEffector, onSetIntensity, customArmPath, onCustomArmPathChange, sessionId }) {
-  // Independent audio state for this row
+function MappingRow({
+  elem, currentMapping, confirmed,
+  onSetEffector, onSetIntensity, onConfirm,
+  sessionId, customKeyframePose,
+}) {
   const audioRef = useRef(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [musicTime, setMusicTime] = useState(0);
   const [analysisData, setAnalysisData] = useState(null);
 
-  // Load this row's analysis data
   useEffect(() => {
     fetch(elem.analysisUrl)
       .then(res => res.json())
@@ -146,63 +280,46 @@ function MappingRow({ elem, currentMapping, onSetEffector, onSetIntensity, custo
       .catch(err => console.error(`Failed to load analysis for ${elem.id}:`, err));
   }, [elem.analysisUrl, elem.id]);
 
-  // Track audio time
   useEffect(() => {
     if (!audioRef.current) return;
     let rafId;
     const updateTime = () => {
-      if (audioRef.current && isPlaying) {
-        setMusicTime(audioRef.current.currentTime);
-      }
+      if (audioRef.current && isPlaying) setMusicTime(audioRef.current.currentTime);
       rafId = requestAnimationFrame(updateTime);
     };
     rafId = requestAnimationFrame(updateTime);
     return () => cancelAnimationFrame(rafId);
   }, [isPlaying]);
 
-  // Audio controls with logging
   const handlePlay = () => {
     audioRef.current?.play();
     setIsPlaying(true);
-    logEvent(sessionId, 'audio_play', {
-      musicElement: elem.id,
-      timestamp: Date.now(),
-    });
+    logEvent(sessionId, 'audio_play', { musicElement: elem.id, timestamp: Date.now() });
   };
-
   const handlePause = () => {
     audioRef.current?.pause();
     setIsPlaying(false);
-    logEvent(sessionId, 'audio_pause', {
-      musicElement: elem.id,
-      currentTime: audioRef.current?.currentTime || 0,
-      timestamp: Date.now(),
-    });
+    logEvent(sessionId, 'audio_pause', { musicElement: elem.id, currentTime: audioRef.current?.currentTime || 0, timestamp: Date.now() });
   };
-
   const handleReset = () => {
-    if (audioRef.current) {
-      audioRef.current.currentTime = 0;
-      setIsPlaying(false);
-    }
-    logEvent(sessionId, 'audio_reset', {
-      musicElement: elem.id,
-      timestamp: Date.now(),
-    });
+    if (audioRef.current) { audioRef.current.currentTime = 0; setIsPlaying(false); }
+    logEvent(sessionId, 'audio_reset', { musicElement: elem.id, timestamp: Date.now() });
   };
 
-  // Show ALL effectors (not filtered by Step 1 selection)
+  const baseEffectors = elem.type === "trigger" ? TRIGGER_EFFECTORS : CONTINUOUS_EFFECTORS;
   const availableEffectors =
-    elem.type === "trigger"
-      ? TRIGGER_EFFECTORS
-      : CONTINUOUS_EFFECTORS;
+    customKeyframePose && elem.type !== "trigger"
+      ? [...baseEffectors, "custom_pose"]
+      : baseEffectors;
 
   return (
-    <div style={styles.mappingRow}>
-      {/* Hidden audio element for this row */}
+    <div style={{
+      ...styles.mappingRow,
+      ...(confirmed ? styles.mappingRowConfirmed : {}),
+    }}>
       <audio ref={audioRef} src={elem.audioUrl} preload="metadata" />
 
-      {/* Left: Music Element Info + Audio Controls */}
+      {/* Left: Info + Audio Controls */}
       <div style={styles.mappingLeft}>
         <div style={{ ...styles.elemDot, background: elem.color }} />
         <div style={{ flex: 1 }}>
@@ -210,42 +327,14 @@ function MappingRow({ elem, currentMapping, onSetEffector, onSetIntensity, custo
           <p style={styles.elemDesc}>{elem.description}</p>
           <p style={styles.elemDetailedDesc}>{elem.detailedDesc}</p>
 
-          {/* Row audio controls */}
           <div style={styles.rowAudioControls}>
-            <button
-              style={{ ...styles.rowControlBtn, opacity: isPlaying ? 0.5 : 1 }}
-              onClick={handlePlay}
-              disabled={isPlaying}
-            >
-              ▶
-            </button>
-            <button
-              style={{ ...styles.rowControlBtn, opacity: !isPlaying ? 0.5 : 1 }}
-              onClick={handlePause}
-              disabled={!isPlaying}
-            >
-              ⏸
-            </button>
-            <button
-              style={styles.rowControlBtn}
-              onClick={handleReset}
-            >
-              ⏹
-            </button>
-            <span style={styles.rowTimeDisplay}>
-              {formatTime(musicTime)}
-            </span>
+            <button style={{ ...styles.rowControlBtn, opacity: isPlaying ? 0.5 : 1 }} onClick={handlePlay} disabled={isPlaying}>▶</button>
+            <button style={{ ...styles.rowControlBtn, opacity: !isPlaying ? 0.5 : 1 }} onClick={handlePause} disabled={!isPlaying}>⏸</button>
+            <button style={styles.rowControlBtn} onClick={handleReset}>⏹</button>
+            <span style={styles.rowTimeDisplay}>{formatTime(musicTime)}</span>
           </div>
 
-          <SignalBar
-            type={elem.id}
-            analysisData={analysisData}
-            width={180}
-            height={18}
-            color={elem.color}
-            musicTime={musicTime}
-            isPlaying={isPlaying}
-          />
+          <SignalBar type={elem.id} analysisData={analysisData} width={180} height={18} color={elem.color} musicTime={musicTime} />
         </div>
       </div>
 
@@ -262,7 +351,7 @@ function MappingRow({ elem, currentMapping, onSetEffector, onSetIntensity, custo
               intensity={currentMapping.intensity}
               externalTime={musicTime}
               playing={isPlaying}
-              customArmPath={customArmPath}
+              customKeyframePose={customKeyframePose}
             />
           ) : (
             <div style={styles.previewPlaceholder}>
@@ -273,12 +362,13 @@ function MappingRow({ elem, currentMapping, onSetEffector, onSetIntensity, custo
         </div>
       </div>
 
-      {/* Right: Controls */}
+      {/* Right: Effector selection + intensity + confirm */}
       <div style={styles.mappingRight}>
         <label style={styles.controlLabel}>Movement Type</label>
         <div style={styles.effectorChips}>
           {availableEffectors.map((eid) => {
-            const eff = EFFECTOR_INFO[eid];
+            const isCustom = eid === "custom_pose";
+            const eff = isCustom ? { icon: "✏️", name: "My Custom Design" } : EFFECTOR_INFO[eid];
             const active = currentMapping.effector === eid;
             return (
               <button
@@ -288,6 +378,7 @@ function MappingRow({ elem, currentMapping, onSetEffector, onSetIntensity, custo
                   background: active ? elem.color : "#f3f4f6",
                   color: active ? "#fff" : "#374151",
                   borderColor: active ? elem.color : "#e5e7eb",
+                  ...(isCustom ? styles.chipCustom : {}),
                 }}
                 onClick={() => onSetEffector(active ? null : eid)}
               >
@@ -317,21 +408,25 @@ function MappingRow({ elem, currentMapping, onSetEffector, onSetIntensity, custo
           </div>
         )}
 
-        {currentMapping.effector === "custom_arm" && (
-          <div style={{ marginTop: 16 }}>
-            <CurveEditor
-              path={customArmPath}
-              onPathChange={onCustomArmPathChange}
-              sessionId={sessionId}
-            />
-          </div>
+        {/* Confirm button */}
+        {currentMapping.effector && (
+          <button
+            style={{
+              ...styles.confirmBtn,
+              ...(confirmed ? styles.confirmBtnDone : {}),
+            }}
+            onClick={onConfirm}
+            disabled={confirmed}
+          >
+            {confirmed ? '✓ Mapping confirmed' : '✓ Confirm this mapping'}
+          </button>
         )}
       </div>
     </div>
   );
 }
 
-function SignalBar({ type, analysisData, width = 120, height = 24, color = "#888", musicTime = 0, isPlaying = false }) {
+function SignalBar({ type, analysisData, width = 120, height = 24, color = "#888", musicTime = 0 }) {
   const canvasRef = useRef(null);
   const beatDecay = useRef(0);
 
@@ -344,14 +439,10 @@ function SignalBar({ type, analysisData, width = 120, height = 24, color = "#888
     let val = 0;
     if (analysisData) {
       if (type === "beat") {
-        // Check if we're near a beat timestamp
         const beats = analysisData.triggers.beats;
         for (const bt of beats) {
           const diff = t - bt;
-          if (diff >= 0 && diff < 0.12) {
-            beatDecay.current = 1.0;
-            break;
-          }
+          if (diff >= 0 && diff < 0.12) { beatDecay.current = 1.0; break; }
         }
         beatDecay.current *= 0.85;
         val = beatDecay.current;
@@ -364,11 +455,9 @@ function SignalBar({ type, analysisData, width = 120, height = 24, color = "#888
     }
 
     ctx.clearRect(0, 0, width, height);
-    // Background
     ctx.fillStyle = color + "22";
     roundRect(ctx, 0, 0, width, height, 4);
     ctx.fill();
-    // Fill
     ctx.fillStyle = color + "88";
     roundRect(ctx, 0, 0, width * Math.max(0, val), height, 4);
     ctx.fill();
@@ -397,18 +486,29 @@ function formatTime(seconds) {
   return `${String(mins).padStart(2, "0")}:${secs.toFixed(2).padStart(5, "0")}`;
 }
 
+function fmtTime(s) {
+  return `${Math.floor(s)}:${String(Math.floor((s % 1) * 60)).padStart(2, '0')}`;
+}
+
 const styles = {
   section: { paddingTop: 40 },
   sectionHeader: { marginBottom: 36 },
   sectionTitle: { fontSize: 28, fontWeight: 700, margin: 0, letterSpacing: "-0.02em" },
   sectionDesc: { fontSize: 15, color: "#78716c", margin: "8px 0 0", maxWidth: 700, lineHeight: 1.6 },
+
   mappingRow: {
     display: "flex", gap: 24, alignItems: "flex-start",
     padding: "32px 0", borderBottom: "1px solid #e7e5e4",
+    transition: "background 0.2s",
   },
-  mappingLeft: {
-    width: 240, flexShrink: 0, display: "flex", gap: 12, alignItems: "flex-start",
+  mappingRowConfirmed: {
+    background: "#f0fdf4",
+    borderRadius: 12,
+    padding: "32px 16px",
+    borderBottom: "1px solid #bbf7d0",
   },
+
+  mappingLeft: { width: 240, flexShrink: 0, display: "flex", gap: 12, alignItems: "flex-start" },
   elemDot: { width: 10, height: 10, borderRadius: "50%", marginTop: 6, flexShrink: 0 },
   elemName: { fontSize: 16, fontWeight: 700, margin: "0 0 4px" },
   elemDesc: { fontSize: 13, color: "#78716c", margin: "0 0 2px", lineHeight: 1.4 },
@@ -423,10 +523,8 @@ const styles = {
     border: "1px solid #e7e5e4", borderRadius: 6, cursor: "pointer",
     transition: "all 0.15s", minWidth: 32,
   },
-  rowTimeDisplay: {
-    fontSize: 11, fontWeight: 600, color: "#78716c",
-    fontFamily: "monospace", marginLeft: "auto",
-  },
+  rowTimeDisplay: { fontSize: 11, fontWeight: 600, color: "#78716c", fontFamily: "monospace", marginLeft: "auto" },
+
   mappingCenter: { flexShrink: 0 },
   previewFrame: {
     width: 240, height: 300, background: "#fff", borderRadius: 12,
@@ -437,6 +535,7 @@ const styles = {
     display: "flex", flexDirection: "column", alignItems: "center",
     justifyContent: "center", height: "100%", color: "#a8a29e",
   },
+
   mappingRight: { flex: 1, minWidth: 0 },
   controlLabel: {
     fontSize: 12, fontWeight: 600, color: "#78716c", textTransform: "uppercase",
@@ -447,7 +546,66 @@ const styles = {
     padding: "8px 14px", fontSize: 13, fontWeight: 600,
     border: "1.5px solid", borderRadius: 10, cursor: "pointer", transition: "all 0.15s",
   },
+  chipCustom: { borderStyle: "dashed" },
   intensityWrap: { maxWidth: 280 },
   slider: { width: "100%", accentColor: "#f59e0b", height: 6 },
   sliderLabels: { display: "flex", justifyContent: "space-between", fontSize: 11, color: "#a8a29e", marginTop: 2 },
+
+  confirmBtn: {
+    marginTop: 16, width: "100%", maxWidth: 280, padding: "12px 20px",
+    fontSize: 14, fontWeight: 700,
+    background: "#1c1917", color: "#fff",
+    border: "none", borderRadius: 10, cursor: "pointer", transition: "all 0.2s",
+  },
+  confirmBtnDone: {
+    background: "#10b981", cursor: "default",
+  },
+
+  // ── Combined Preview ────────────────────────────────────
+  combinedSection: {
+    marginTop: 64,
+    background: "#fff",
+    border: "2px solid #e7e5e4",
+    borderRadius: 20,
+    padding: "36px",
+    boxShadow: "0 4px 24px rgba(0,0,0,0.07)",
+  },
+  combinedHeader: {
+    display: "flex", justifyContent: "space-between", alignItems: "flex-start",
+    marginBottom: 28,
+  },
+  combinedTitle: { fontSize: 22, fontWeight: 700, margin: "0 0 6px", letterSpacing: "-0.02em" },
+  combinedDesc: { fontSize: 14, color: "#78716c", margin: 0 },
+  confirmBadge: {
+    padding: "6px 16px", borderRadius: 20, fontSize: 13, fontWeight: 700,
+    color: "#fff", flexShrink: 0,
+  },
+  combinedEmpty: {
+    textAlign: "center", padding: "48px 0",
+    fontSize: 14, color: "#a8a29e", fontStyle: "italic",
+  },
+  combinedLayout: { display: "flex", gap: 40, alignItems: "flex-start" },
+  combinedCanvas: { flexShrink: 0 },
+  combinedControls: {
+    display: "flex", alignItems: "center", gap: 10, marginTop: 16,
+  },
+  combinedBtn: {
+    padding: "8px 14px", fontSize: 14, fontWeight: 700,
+    background: "#1c1917", color: "#fff",
+    border: "none", borderRadius: 8, cursor: "pointer",
+  },
+  combinedTime: { fontSize: 13, color: "#78716c", fontFamily: "monospace" },
+
+  combinedLegend: { flex: 1 },
+  legendTitle: { fontSize: 12, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: "#a8a29e", margin: "0 0 16px" },
+  legendRow: {
+    display: "flex", alignItems: "center", gap: 8, padding: "10px 0",
+    borderBottom: "1px solid #f5f5f4",
+  },
+  legendDot: { width: 8, height: 8, borderRadius: "50%", flexShrink: 0 },
+  legendElem: { fontSize: 13, fontWeight: 700, width: 56 },
+  legendArrow: { fontSize: 12, color: "#a8a29e" },
+  legendEff: { fontSize: 13, flex: 1 },
+  legendIntensity: { fontSize: 12, color: "#a8a29e", fontVariantNumeric: "tabular-nums" },
+  legendHint: { fontSize: 13, color: "#a8a29e", fontStyle: "italic", marginTop: 16 },
 };

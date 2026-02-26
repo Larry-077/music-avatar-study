@@ -85,6 +85,19 @@ export async function POST(request) {
       }
     }
 
+    // Handle keyframe_design: save intention text to session record
+    if (eventType === 'keyframe_design') {
+      const { error: updateError } = await supabase
+        .from('sessions')
+        .update({ intention_text: data?.intentionText ?? null })
+        .eq('id', sessionId);
+
+      if (updateError) {
+        console.error('[API] Intention text update error:', updateError);
+        // Don't throw - allow event to be logged even if update fails
+      }
+    }
+
     // Handle final_submit: mark session as submitted
     if (eventType === 'final_submit') {
       const { error: updateError } = await supabase

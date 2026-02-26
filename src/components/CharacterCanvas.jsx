@@ -9,6 +9,7 @@
 import { useRef, useEffect } from "react";
 import { CharacterRig, DEFAULT_SCREEN_X, DEFAULT_SCREEN_Y } from "../character/character_rig.js";
 import { BindingEngine } from "../engine/binder.js";
+import { KeyframePose } from "../engine/KeyframePose.js";
 
 /**
  * Renders a single character with optional effector + music signal preview.
@@ -16,13 +17,14 @@ import { BindingEngine } from "../engine/binder.js";
  * Props:
  *  - width, height: canvas size
  *  - analysisData: loaded JSON (for signal-driven preview)
- *  - effectorId: single effector to preview (for Gesture Gallery cards)
+ *  - effectorId: single effector to preview
  *  - musicType: which signal drives it ('volume'|'pitch'|'timbre'|'beat')
  *  - intensity: 0-1 (for Mapping Studio slider)
  *  - playing: whether animation is running
  *  - characterRef: optional external CharacterRig ref (for shared instances)
  *  - engineRef: optional external BindingEngine ref
  *  - externalTime: if provided, use this time instead of internal clock
+ *  - customKeyframePose: keyframes array for the 'custom_pose' effector
  */
 export default function CharacterCanvas({
   width = 300,
@@ -35,7 +37,7 @@ export default function CharacterCanvas({
   externalTime = null,
   characterRef: externalCharRef = null,
   engineRef: externalEngineRef = null,
-  customArmPath = null,
+  customKeyframePose = null,
 }) {
   const canvasRef = useRef(null);
   const internalCharRef = useRef(null);
@@ -76,7 +78,13 @@ export default function CharacterCanvas({
       internalCharRef.current.resetToDefault();
     }
 
-    const engine = new BindingEngine(analysisData);
+    // Build custom effectors map if a keyframe pose is available
+    const customEffectors = {};
+    if (customKeyframePose) {
+      customEffectors.custom_pose = new KeyframePose(customKeyframePose);
+    }
+
+    const engine = new BindingEngine(analysisData, customEffectors);
     engine.clearBindings();
 
     if (musicType) {
@@ -90,13 +98,8 @@ export default function CharacterCanvas({
       }
     }
 
-    // Set custom arm path if this effector uses it
-    if (effectorId === "custom_arm" && engine.effectors.custom_arm && customArmPath) {
-      engine.effectors.custom_arm.setPath(customArmPath);
-    }
-
     internalEngineRef.current = engine;
-  }, [analysisData, effectorId, musicType, intensity, customArmPath]);
+  }, [analysisData, effectorId, musicType, intensity, customKeyframePose]);
 
   // Animation loop
   useEffect(() => {

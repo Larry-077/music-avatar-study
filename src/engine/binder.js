@@ -15,11 +15,14 @@ import {
   SimpleLipSync,
   HeadBanger,
   FootTapper,
-  CustomArmPath,
 } from "./effectors.js";
 
 export class BindingEngine {
-  constructor(analysisData) {
+  /**
+   * @param {object} analysisData    Parsed analysis JSON
+   * @param {object} customEffectors Optional extra effectors, e.g. { custom_pose: new KeyframePose(...) }
+   */
+  constructor(analysisData, customEffectors = {}) {
     this.analysis = analysisData;
     const fps = analysisData.info.fps;
 
@@ -31,7 +34,7 @@ export class BindingEngine {
       beat: new TriggerSignal(analysisData.triggers.beats),
     };
 
-    // 2. Create Available Effectors
+    // 2. Create Available Effectors (builtins + any custom ones passed in)
     this.effectors = {
       arm_dance: new ArmDancer(),
       body_pump: new BodyPumper(),
@@ -40,7 +43,7 @@ export class BindingEngine {
       head_bob: new HeadBanger(),
       foot_tap: new FootTapper(),
       lip_sync: new SimpleLipSync(),
-      custom_arm: new CustomArmPath(),
+      ...customEffectors,
     };
 
     // 3. Bindings (The "Wiring")

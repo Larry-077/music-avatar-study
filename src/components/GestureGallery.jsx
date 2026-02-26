@@ -12,7 +12,6 @@ import CharacterCanvas from "./CharacterCanvas";
 
 const EFFECTOR_INFO = {
   arm_dance:  { name: "Arm Dance", description: "Arms rise and fall symmetrically", category: "continuous", icon: "🙌" },
-  custom_arm: { name: "Custom Arm Path", description: "Draw a custom trajectory for the arms to follow", category: "continuous", icon: "✍️" },
   body_pump:  { name: "Body Pump", description: "Body inflates and deflates with energy", category: "continuous", icon: "💪" },
   float:      { name: "Levitate", description: "Character rises and falls vertically", category: "continuous", icon: "🎈" },
   face:       { name: "Face Expression", description: "Eyebrows lift and mouth opens with intensity", category: "continuous", icon: "😮" },
