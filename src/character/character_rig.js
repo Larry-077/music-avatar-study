@@ -154,7 +154,7 @@ export class CharacterRig {
     this.eyeVariants = new SpriteVariant(eyeVars, "1_center");
 
     // Mouth variants
-    const mouthDefault = "Sil" in mouthVars ? "Sil" : Object.keys(mouthVars)[0];
+    const mouthDefault = "1" in mouthVars ? "1" : Object.keys(mouthVars)[0];
     this.mouthVariants = new SpriteVariant(mouthVars, mouthDefault);
 
     // Hand variants (split L/R)
@@ -474,7 +474,7 @@ export class CharacterRig {
     this.setArmJointRotation("right", -30, -10);
     this.setHandVariant("left", "L_hand_rest");
     this.setHandVariant("right", "R_hand_rest");
-    this.setMouthVariant("Sil");
+    this.setMouthVariant("1");
     const feetBone = this.getBone("Feet");
     if (feetBone) feetBone.setScale(1.0, 1.0);
   }
