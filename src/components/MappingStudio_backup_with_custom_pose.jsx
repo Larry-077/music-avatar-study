@@ -180,6 +180,7 @@ export default function MappingStudio({
           onSetIntensity={(val) => handleSetIntensity(elem.id, val)}
           onConfirm={() => handleConfirm(elem.id)}
           sessionId={sessionId}
+          customKeyframePose={customKeyframePose}
         />
       ))}
 
@@ -236,8 +237,8 @@ export default function MappingStudio({
               {MUSIC_ELEMENTS.map(elem => {
                 const cm = confirmedMappings[elem.id];
                 if (!cm) return null;
-                const eff = cm.effector === 'none'
-                  ? { icon: '⏹', name: 'No Movement' }
+                const eff = cm.effector === 'custom_pose'
+                  ? { icon: '✏️', name: 'My Custom Design' }
                   : EFFECTOR_INFO[cm.effector];
                 return (
                   <div key={elem.id} style={styles.legendRow}>
@@ -265,7 +266,7 @@ export default function MappingStudio({
 function MappingRow({
   elem, currentMapping, confirmed,
   onSetEffector, onSetIntensity, onConfirm,
-  sessionId,
+  sessionId, customKeyframePose,
 }) {
   const audioRef = useRef(null);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -306,7 +307,10 @@ function MappingRow({
   };
 
   const baseEffectors = elem.type === "trigger" ? TRIGGER_EFFECTORS : CONTINUOUS_EFFECTORS;
-  const availableEffectors = ['none', ...baseEffectors];
+  const availableEffectors =
+    customKeyframePose && elem.type !== "trigger"
+      ? [...baseEffectors, "custom_pose"]
+      : baseEffectors;
 
   return (
     <div style={{
@@ -337,14 +341,7 @@ function MappingRow({
       {/* Center: Character Preview */}
       <div style={styles.mappingCenter}>
         <div style={styles.previewFrame}>
-          {currentMapping.effector === 'none' ? (
-            <CharacterCanvas
-              width={240}
-              height={300}
-              effectorId={null}
-              playing={false}
-            />
-          ) : (
+          {currentMapping.effector ? (
             <CharacterCanvas
               width={240}
               height={300}
@@ -354,7 +351,13 @@ function MappingRow({
               intensity={currentMapping.intensity}
               externalTime={musicTime}
               playing={isPlaying}
+              customKeyframePose={customKeyframePose}
             />
+          ) : (
+            <div style={styles.previewPlaceholder}>
+              <span style={{ fontSize: 32, opacity: 0.3 }}>&#128100;</span>
+              <span style={{ fontSize: 12, opacity: 0.4, marginTop: 4 }}>Select a movement</span>
+            </div>
           )}
         </div>
       </div>
@@ -364,9 +367,8 @@ function MappingRow({
         <label style={styles.controlLabel}>Movement Type</label>
         <div style={styles.effectorChips}>
           {availableEffectors.map((eid) => {
-            const eff = eid === 'none'
-              ? { icon: '⏹', name: 'No Movement' }
-              : EFFECTOR_INFO[eid];
+            const isCustom = eid === "custom_pose";
+            const eff = isCustom ? { icon: "✏️", name: "My Custom Design" } : EFFECTOR_INFO[eid];
             const active = currentMapping.effector === eid;
             return (
               <button
@@ -376,8 +378,9 @@ function MappingRow({
                   background: active ? elem.color : "#f3f4f6",
                   color: active ? "#fff" : "#374151",
                   borderColor: active ? elem.color : "#e5e7eb",
+                  ...(isCustom ? styles.chipCustom : {}),
                 }}
-                onClick={() => onSetEffector(eid)}
+                onClick={() => onSetEffector(active ? null : eid)}
               >
                 {eff.icon} {eff.name}
               </button>
@@ -385,7 +388,7 @@ function MappingRow({
           })}
         </div>
 
-        {currentMapping.effector && currentMapping.effector !== 'none' && (
+        {currentMapping.effector && (
           <div style={styles.intensityWrap}>
             <label style={styles.controlLabel}>
               Intensity: <strong>{Math.round(currentMapping.intensity * 100)}%</strong>
@@ -405,17 +408,19 @@ function MappingRow({
           </div>
         )}
 
-        {/* Confirm button — always visible */}
-        <button
-          style={{
-            ...styles.confirmBtn,
-            ...(confirmed ? styles.confirmBtnDone : {}),
-          }}
-          onClick={onConfirm}
-          disabled={confirmed}
-        >
-          {confirmed ? '✓ Mapping confirmed' : '✓ Confirm this mapping'}
-        </button>
+        {/* Confirm button */}
+        {currentMapping.effector && (
+          <button
+            style={{
+              ...styles.confirmBtn,
+              ...(confirmed ? styles.confirmBtnDone : {}),
+            }}
+            onClick={onConfirm}
+            disabled={confirmed}
+          >
+            {confirmed ? '✓ Mapping confirmed' : '✓ Confirm this mapping'}
+          </button>
+        )}
       </div>
     </div>
   );

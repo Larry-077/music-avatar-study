@@ -68,7 +68,7 @@ export default function CombinedPreviewCanvas({
   // 2. Rebuild BindingEngine whenever confirmed mappings change
   useEffect(() => {
     const activeMappings = Object.entries(confirmedMappings).filter(
-      ([, m]) => m && m.effector
+      ([, m]) => m && m.effector && m.effector !== 'none'
     );
     if (activeMappings.length === 0) { engineRef.current = null; return; }
 

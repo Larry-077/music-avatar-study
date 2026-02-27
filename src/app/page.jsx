@@ -31,10 +31,10 @@ export default function App() {
   const [customIntentionText, setCustomIntentionText] = useState(null);
 
   const [mappings, setMappings] = useState({
-    volume: { effector: null, intensity: 0.7 },
-    pitch:  { effector: null, intensity: 0.7 },
-    timbre: { effector: null, intensity: 0.7 },
-    beat:   { effector: null, intensity: 0.7 },
+    volume: { effector: 'none', intensity: 0.7 },
+    pitch:  { effector: 'none', intensity: 0.7 },
+    timbre: { effector: 'none', intensity: 0.7 },
+    beat:   { effector: 'none', intensity: 0.7 },
   });
   const sessionStartTime = useRef(null);
 
@@ -53,7 +53,7 @@ export default function App() {
 
     const handleBeforeUnload = () => {
       const duration = Date.now() - sessionStartTime.current;
-      const totalMappings = Object.values(mappings).filter(m => m.effector !== null).length;
+      const totalMappings = Object.values(mappings).filter(m => m.effector && m.effector !== 'none').length;
       logEvent(sid, 'session_end', { duration, totalMappings, timestamp: Date.now() });
     };
     window.addEventListener('beforeunload', handleBeforeUnload);
@@ -82,15 +82,17 @@ export default function App() {
     }
   }, [sessionId]);
 
-  // Called by Page 2 when the user finishes keyframe design
-  // DesignStudio passes { keyframes, intentionText }
-  const handleKeyframePoseSaved = useCallback(({ keyframes, intentionText }) => {
-    setCustomKeyframePose(keyframes);
+  // Called by Page 2 when the user finishes sketchpad design
+  // DesignStudio passes { sketch, selectedMusic, intentionText }
+  const handleKeyframePoseSaved = useCallback(({ sketch, selectedMusic, intentionText }) => {
+    setCustomKeyframePose(null);
     setCustomIntentionText(intentionText ?? null);
     if (sessionId) {
       logEvent(sessionId, 'keyframe_design', {
         intentionText,
-        keyframes,
+        selectedMusic,
+        hasSketch: !!sketch,
+        sketch,
         timestamp: Date.now(),
       });
     }
@@ -104,8 +106,6 @@ export default function App() {
         userName,
         intentionText: customIntentionText,
         mappings,
-        hasCustomPose: customKeyframePose !== null,
-        customKeyframes: customKeyframePose,
         timestamp: Date.now(),
       });
     }

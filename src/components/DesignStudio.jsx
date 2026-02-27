@@ -5,7 +5,7 @@
  * =====================
  * Two-phase creative flow:
  *   Phase A: IntentionBoard — express movement intentions
- *   Phase B: PoseEditor    — design 3 keyframe poses for a chosen intention
+ *   Phase B: Sketchpad     — draw movement ideas on top of the character
  *
  * When the user saves their pose design, calls onSave(keyframes).
  * If they skip, calls onSkip().
@@ -13,7 +13,7 @@
 
 import { useState } from 'react';
 import IntentionBoard from './IntentionBoard';
-import PoseEditor from './PoseEditor';
+import Sketchpad from './Sketchpad';
 
 export default function DesignStudio({ sessionId, onSave, onSkip }) {
   // null = Phase A (intention board), non-null = Phase B (pose editor)
@@ -27,13 +27,13 @@ export default function DesignStudio({ sessionId, onSave, onSkip }) {
     setSelectedIntention(null);
   };
 
-  const handleSave = (keyframes) => {
-    onSave({ keyframes, intentionText: selectedIntention?.text ?? '' });
+  const handleSave = (payload) => {
+    onSave({ ...payload, intentionText: selectedIntention?.text ?? '' });
   };
 
   if (selectedIntention !== null) {
     return (
-      <PoseEditor
+      <Sketchpad
         intention={selectedIntention}
         onSave={handleSave}
         onBack={handleBackToIntentions}
