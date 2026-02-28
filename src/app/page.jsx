@@ -11,7 +11,7 @@
 
 import { useState, useRef, useEffect, useCallback } from "react";
 import DemoGallery from "@/components/DemoGallery";
-import DesignStudio from "@/components/DesignStudio";
+import Sketchpad from "@/components/Sketchpad";
 import MappingStudio from "@/components/MappingStudio";
 import GifRecorder from "@/components/GifRecorder";
 import UserInfoForm from "@/components/UserInfoForm";
@@ -83,16 +83,13 @@ export default function App() {
   }, [sessionId]);
 
   // Called by Page 2 when the user finishes sketchpad design
-  // DesignStudio passes { sketch, selectedMusic, intentionText }
-  const handleKeyframePoseSaved = useCallback(({ sketch, selectedMusic, intentionText }) => {
+  // Sketchpad passes { designs: { volume, pitch, timbre, beat } }
+  const handleKeyframePoseSaved = useCallback(({ designs }) => {
     setCustomKeyframePose(null);
-    setCustomIntentionText(intentionText ?? null);
+    setCustomIntentionText(null);
     if (sessionId) {
       logEvent(sessionId, 'keyframe_design', {
-        intentionText,
-        selectedMusic,
-        hasSketch: !!sketch,
-        sketch,
+        designs,
         timestamp: Date.now(),
       });
     }
@@ -164,7 +161,7 @@ export default function App() {
         )}
 
         {step === 2 && (
-          <DesignStudio
+          <Sketchpad
             sessionId={sessionId}
             onSave={handleKeyframePoseSaved}
             onSkip={() => handleStepChange(3)}
