@@ -218,32 +218,6 @@ export default function Sketchpad({ onSave, onSkip, sessionId }) {
 
   // ── Render ───────────────────────────────────────────────────
 
-  // Completion screen
-  if (saved) {
-    return (
-      <div style={styles.completionPage}>
-        <div style={styles.completionCard}>
-          <div style={styles.completionIcon}>🎉</div>
-          <h2 style={styles.completionTitle}>You've completed all 4 designs!</h2>
-          <p style={styles.completionSubtitle}>
-            Your movement sketches and descriptions for all four musical elements have been saved.
-          </p>
-          <div style={styles.completionGrid}>
-            {MUSIC_ELEMENTS.map(elem => (
-              <div key={elem.id} style={{ ...styles.completionElem, borderLeft: `4px solid ${elem.color}` }}>
-                <span style={{ ...styles.completionElemName, color: elem.color }}>{elem.name}</span>
-                <span style={styles.completionElemCheck}>✓</span>
-              </div>
-            ))}
-          </div>
-          <p style={styles.completionHintText}>
-            Head back to <strong>Mapping Studio</strong> to submit your mappings.
-          </p>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div style={styles.page}>
       <audio
@@ -462,6 +436,30 @@ export default function Sketchpad({ onSave, onSkip, sessionId }) {
           </div>
         </div>
       </div>
+
+      {/* ── Completion modal ──────────────────────────── */}
+      {saved && (
+        <div style={styles.modalBackdrop}>
+          <div style={styles.modalCard}>
+            <div style={styles.completionIcon}>🎉</div>
+            <h2 style={styles.completionTitle}>All 4 designs complete!</h2>
+            <p style={styles.completionSubtitle}>
+              Your movement sketches and descriptions have been saved.
+            </p>
+            <div style={styles.completionGrid}>
+              {MUSIC_ELEMENTS.map(elem => (
+                <div key={elem.id} style={{ ...styles.completionElem, borderLeft: `4px solid ${elem.color}` }}>
+                  <span style={{ ...styles.completionElemName, color: elem.color }}>{elem.name}</span>
+                  <span style={styles.completionElemCheck}>✓</span>
+                </div>
+              ))}
+            </div>
+            <button style={styles.modalBtn} onClick={onSkip}>
+              Go to Mapping Studio →
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -603,15 +601,21 @@ const styles = {
     borderRadius: 10, transition: 'opacity 0.2s',
   },
 
-  // Completion screen
-  completionPage: {
+  // Completion modal
+  modalBackdrop: {
+    position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)',
     display: 'flex', alignItems: 'center', justifyContent: 'center',
-    minHeight: '70vh', paddingTop: 32, paddingBottom: 80,
+    zIndex: 1000,
   },
-  completionCard: {
-    textAlign: 'center', maxWidth: 480, padding: '48px 40px',
+  modalCard: {
+    textAlign: 'center', maxWidth: 420, width: '90%', padding: '44px 36px',
     background: '#fff', borderRadius: 20, border: '2px solid #e7e5e4',
-    boxShadow: '0 8px 40px rgba(0,0,0,0.08)',
+    boxShadow: '0 16px 60px rgba(0,0,0,0.2)',
+  },
+  modalBtn: {
+    marginTop: 24, padding: '13px 28px', fontSize: 15, fontWeight: 700,
+    background: '#1c1917', color: '#fff', border: 'none', borderRadius: 10,
+    cursor: 'pointer', width: '100%',
   },
   completionIcon: { fontSize: 56, marginBottom: 16, lineHeight: 1 },
   completionTitle: { fontSize: 26, fontWeight: 800, margin: '0 0 12px', letterSpacing: '-0.02em' },

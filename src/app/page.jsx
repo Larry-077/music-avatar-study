@@ -93,7 +93,7 @@ export default function App() {
         timestamp: Date.now(),
       });
     }
-    handleStepChange(2);
+    // Don't navigate — Sketchpad shows completion modal inline
   }, [sessionId, handleStepChange]);
 
   const handleFinalSubmit = useCallback(() => {
