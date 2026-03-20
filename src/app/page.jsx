@@ -93,7 +93,7 @@ export default function App() {
         timestamp: Date.now(),
       });
     }
-    handleStepChange(3);
+    handleStepChange(2);
   }, [sessionId, handleStepChange]);
 
   const handleFinalSubmit = useCallback(() => {
@@ -137,7 +137,7 @@ export default function App() {
             style={{ ...styles.stepBtn, ...(step === 2 ? styles.stepBtnActive : {}) }}
           >
             <span style={styles.stepNum}>2</span>
-            Design Your Own
+            Mapping Studio
           </button>
           <div style={styles.stepDivider} />
           <button
@@ -145,7 +145,7 @@ export default function App() {
             style={{ ...styles.stepBtn, ...(step === 3 ? styles.stepBtnActive : {}) }}
           >
             <span style={styles.stepNum}>3</span>
-            Mapping Studio
+            Design Your Own
           </button>
         </div>
       </header>
@@ -161,14 +161,6 @@ export default function App() {
         )}
 
         {step === 2 && (
-          <Sketchpad
-            sessionId={sessionId}
-            onSave={handleKeyframePoseSaved}
-            onSkip={() => handleStepChange(3)}
-          />
-        )}
-
-        {step === 3 && (
           <>
             <MappingStudio
               mappings={mappings}
@@ -197,6 +189,14 @@ export default function App() {
               )}
             </div>
           </>
+        )}
+
+        {step === 3 && (
+          <Sketchpad
+            sessionId={sessionId}
+            onSave={handleKeyframePoseSaved}
+            onSkip={() => handleStepChange(2)}
+          />
         )}
       </main>
     </div>

@@ -68,7 +68,7 @@ function EffectorCard({ id, eff, analysisData }) {
 
   return (
     <div style={styles.card}>
-      <div style={styles.cardCanvas}>
+      <div style={{ ...styles.cardCanvas, position: "relative" }}>
         {!gifError ? (
           <img
             src={gifSrc}
@@ -86,6 +86,18 @@ function EffectorCard({ id, eff, analysisData }) {
             effectorId={id}
             intensity={0.8}
           />
+        )}
+        {id === "float" && (
+          <div style={{
+            position: "absolute",
+            bottom: "20%",
+            left: "8%",
+            right: "8%",
+            height: 2,
+            background: "#3b82f6",
+            borderRadius: 1,
+            opacity: 0.85,
+          }} />
         )}
       </div>
       <div style={styles.cardInfo}>

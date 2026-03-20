@@ -48,11 +48,11 @@ export class ArmDancer extends Effector {
 }
 
 export class BodyPumper extends Effector {
-  constructor(minScale = 0.9, maxScale = 2.0) {
+  constructor(minScale = 0.85, maxScale = 2.2) {
     super();
     this.minS = minScale;
     this.maxS = maxScale;
-    this.smoothing = 0.06;
+    this.smoothing = 0.12;
     this.currentVal = 0.0;
   }
 
@@ -65,10 +65,10 @@ export class BodyPumper extends Effector {
 }
 
 export class Floater extends Effector {
-  constructor(maxOffset = 350) {
+  constructor(maxOffset = 280) {
     super();
     this.maxOffset = maxOffset;
-    this.smoothing = 0.04;
+    this.smoothing = 0.09;
     this.currentVal = 0.0;
     this.baseY = null;
     this.idleTime = 0.0;
@@ -94,10 +94,12 @@ export class FaceExpression extends Effector {
   constructor() {
     super();
     this.currentBrowOffset = 0.0;
-    this.currentScale = 1.0;
+    this.currentMouthScale = 1.0;
+    this.currentFaceScale = 1.0;
     this.smoothing = 0.08;
-    this.maxBrowRaise = -90.0;
-    this.maxMouthScale = 4.5;
+    this.maxBrowRaise = -80.0;
+    this.maxMouthScale = 2.0;   // reduced from 4.5 — keeps mouth proportional
+    this.maxFaceScale = 1.15;   // slightly enlarge face oval for "shocked" look
   }
 
   update(value, character) {
@@ -107,18 +109,22 @@ export class FaceExpression extends Effector {
       value = (value - 0.05) / 0.95;
     }
 
-    let boostedValue = value * 2.5;
+    let boostedValue = value * 1.5;  // reduced from 2.5 — ramps up more gradually
     boostedValue = Math.min(1.0, boostedValue);
     const exaggeratedValue = Math.pow(boostedValue, 2.0);
 
-    const targetBrow = exaggeratedValue * this.maxBrowRaise;
-    const targetScale = 1.0 + exaggeratedValue * (this.maxMouthScale - 1.0);
+    const targetBrow       = exaggeratedValue * this.maxBrowRaise;
+    const targetMouthScale = 1.0 + exaggeratedValue * (this.maxMouthScale - 1.0);
+    const targetFaceScale  = 1.0 + exaggeratedValue * (this.maxFaceScale - 1.0);
 
-    this.currentBrowOffset += (targetBrow - this.currentBrowOffset) * this.smoothing;
-    this.currentScale += (targetScale - this.currentScale) * this.smoothing;
+    this.currentBrowOffset  += (targetBrow - this.currentBrowOffset) * this.smoothing;
+    this.currentMouthScale  += (targetMouthScale - this.currentMouthScale) * this.smoothing;
+    this.currentFaceScale   += (targetFaceScale - this.currentFaceScale) * this.smoothing;
 
     character.setEyebrowHeight(this.currentBrowOffset);
-    character.setFaceScale(this.currentScale);
+    character.setFaceScale(this.currentMouthScale);   // scales Mouth bone
+    const faceBone = character.getBone?.("Face");
+    if (faceBone) faceBone.setScale(this.currentFaceScale, this.currentFaceScale);
   }
 }
 
@@ -174,7 +180,7 @@ export class HeadBanger extends Effector {
     this.timer = 0.0;
     this.duration = 0.2;
     this.active = false;
-    this.bobAmount = 30;
+    this.bobAmount = 55;
     this.currentOffset = 0.0;
     this.intensity = 1.0;
   }
@@ -207,7 +213,7 @@ export class FootTapper extends Effector {
     super();
     this.scaleTimer = 0.0;
     this.duration = 0.25;
-    this.maxScale = 1.5;
+    this.maxScale = 2.0;
     this.currentScale = 1.0;
     this.triggered = false;
     this.intensity = 1.0;

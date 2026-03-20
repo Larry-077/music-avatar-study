@@ -49,6 +49,7 @@ export default function Sketchpad({ onSave, onSkip, sessionId }) {
   const [selectedColor, setSelectedColor] = useState(COLOR_OPTIONS[0].color);
   const [isEraser,      setIsEraser]      = useState(false);
   const [isPlaying,     setIsPlaying]     = useState(false);
+  const [showExample,   setShowExample]   = useState(false);
 
   // Keep ref in sync
   const setActiveTab = (tab) => {
@@ -231,10 +232,29 @@ export default function Sketchpad({ onSave, onSkip, sessionId }) {
             For each musical element, draw how you imagine the character should move, and describe it in words.
           </p>
         </div>
-        <button style={styles.skipBtn} onClick={onSkip}>
-          Skip →
-        </button>
+        <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
+          <button style={styles.exampleBtn} onClick={() => setShowExample(v => !v)}>
+            {showExample ? 'Hide Example' : '💡 See Example'}
+          </button>
+          <button style={styles.skipBtn} onClick={onSkip}>
+            Skip →
+          </button>
+        </div>
       </div>
+
+      {/* ── Example panel ────────────────────────────── */}
+      {showExample && (
+        <div style={styles.examplePanel}>
+          <p style={styles.exampleLabel}>
+            Example — draw movement arrows and annotations on top of the character:
+          </p>
+          <img
+            src="/assets/eg.jpg"
+            alt="Example sketch"
+            style={styles.exampleImg}
+          />
+        </div>
+      )}
 
       {/* ── Tabs ─────────────────────────────────────── */}
       <div style={styles.tabs}>
@@ -431,6 +451,23 @@ const styles = {
     padding: '8px 18px', fontSize: 13, fontWeight: 600,
     background: '#f3f4f6', border: 'none', borderRadius: 8,
     cursor: 'pointer', color: '#78716c', whiteSpace: 'nowrap', flexShrink: 0,
+  },
+  exampleBtn: {
+    padding: '8px 18px', fontSize: 13, fontWeight: 600,
+    background: '#fffbeb', border: '1.5px solid #fde68a', borderRadius: 8,
+    cursor: 'pointer', color: '#92400e', whiteSpace: 'nowrap', flexShrink: 0,
+  },
+  examplePanel: {
+    background: '#fafaf9', border: '1.5px solid #e7e5e4', borderRadius: 12,
+    padding: '14px 16px', marginBottom: 24, display: 'flex', alignItems: 'flex-start',
+    gap: 16, flexWrap: 'wrap',
+  },
+  exampleLabel: {
+    fontSize: 13, color: '#57534e', margin: 0, paddingTop: 2, flex: '0 0 auto', maxWidth: 160,
+  },
+  exampleImg: {
+    maxHeight: 240, borderRadius: 10, border: '1px solid #e7e5e4',
+    objectFit: 'contain', display: 'block',
   },
 
   // Tabs
