@@ -36,6 +36,11 @@ export default function App() {
     timbre: { effector: 'none', intensity: 0.7 },
     beat:   { effector: 'none', intensity: 0.7 },
   });
+
+  // Lifted from MappingStudio so it persists when navigating to page 3 and back
+  const [confirmedMappings, setConfirmedMappings] = useState({
+    volume: null, pitch: null, timbre: null, beat: null,
+  });
   const sessionStartTime = useRef(null);
 
   // Initialize session and log session_start
@@ -168,6 +173,8 @@ export default function App() {
               setIntensity={setIntensity}
               sessionId={sessionId}
               customKeyframePose={customKeyframePose}
+              confirmedMappings={confirmedMappings}
+              setConfirmedMappings={setConfirmedMappings}
             />
 
             {/* Final submission */}

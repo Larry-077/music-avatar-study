@@ -454,9 +454,6 @@ export default function Sketchpad({ onSave, onSkip, sessionId }) {
                 </div>
               ))}
             </div>
-            <button style={styles.modalBtn} onClick={onSkip}>
-              Go to Mapping Studio →
-            </button>
           </div>
         </div>
       )}

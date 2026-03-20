@@ -71,14 +71,9 @@ export default function MappingStudio({
   setIntensity,
   sessionId,
   customKeyframePose = null,
+  confirmedMappings,
+  setConfirmedMappings,
 }) {
-  // Tracks which rows the user has confirmed
-  const [confirmedMappings, setConfirmedMappings] = useState({
-    volume: null,
-    pitch:  null,
-    timbre: null,
-    beat:   null,
-  });
 
   // Combined preview audio state (uses test3.wav)
   const combinedAudioRef = useRef(null);
