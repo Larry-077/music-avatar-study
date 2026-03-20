@@ -125,6 +125,8 @@ export class FaceExpression extends Effector {
     character.setFaceScale(this.currentMouthScale);   // scales Mouth bone
     const faceBone = character.getBone?.("Face");
     if (faceBone) faceBone.setScale(this.currentFaceScale, this.currentFaceScale);
+    const hatBone = character.getBone?.("Hat");
+    if (hatBone) hatBone.setScale(this.currentFaceScale, this.currentFaceScale);
   }
 }
 

@@ -50,6 +50,7 @@ export default function Sketchpad({ onSave, onSkip, sessionId }) {
   const [isEraser,      setIsEraser]      = useState(false);
   const [isPlaying,     setIsPlaying]     = useState(false);
   const [showExample,   setShowExample]   = useState(false);
+  const [saved,         setSaved]         = useState(false);
 
   // Keep ref in sync
   const setActiveTab = (tab) => {
@@ -212,9 +213,36 @@ export default function Sketchpad({ onSave, onSkip, sessionId }) {
     });
 
     onSave({ designs });
+    setSaved(true);
   };
 
   // ── Render ───────────────────────────────────────────────────
+
+  // Completion screen
+  if (saved) {
+    return (
+      <div style={styles.completionPage}>
+        <div style={styles.completionCard}>
+          <div style={styles.completionIcon}>🎉</div>
+          <h2 style={styles.completionTitle}>You've completed all 4 designs!</h2>
+          <p style={styles.completionSubtitle}>
+            Your movement sketches and descriptions for all four musical elements have been saved.
+          </p>
+          <div style={styles.completionGrid}>
+            {MUSIC_ELEMENTS.map(elem => (
+              <div key={elem.id} style={{ ...styles.completionElem, borderLeft: `4px solid ${elem.color}` }}>
+                <span style={{ ...styles.completionElemName, color: elem.color }}>{elem.name}</span>
+                <span style={styles.completionElemCheck}>✓</span>
+              </div>
+            ))}
+          </div>
+          <p style={styles.completionHintText}>
+            Head back to <strong>Mapping Studio</strong> to submit your mappings.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div style={styles.page}>
@@ -574,4 +602,26 @@ const styles = {
     background: '#1c1917', color: '#fff', border: 'none',
     borderRadius: 10, transition: 'opacity 0.2s',
   },
+
+  // Completion screen
+  completionPage: {
+    display: 'flex', alignItems: 'center', justifyContent: 'center',
+    minHeight: '70vh', paddingTop: 32, paddingBottom: 80,
+  },
+  completionCard: {
+    textAlign: 'center', maxWidth: 480, padding: '48px 40px',
+    background: '#fff', borderRadius: 20, border: '2px solid #e7e5e4',
+    boxShadow: '0 8px 40px rgba(0,0,0,0.08)',
+  },
+  completionIcon: { fontSize: 56, marginBottom: 16, lineHeight: 1 },
+  completionTitle: { fontSize: 26, fontWeight: 800, margin: '0 0 12px', letterSpacing: '-0.02em' },
+  completionSubtitle: { fontSize: 15, color: '#78716c', margin: '0 0 28px', lineHeight: 1.6 },
+  completionGrid: { display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 28, textAlign: 'left' },
+  completionElem: {
+    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+    padding: '10px 14px', background: '#fafaf9', borderRadius: 8,
+  },
+  completionElemName: { fontWeight: 700, fontSize: 14 },
+  completionElemCheck: { fontSize: 16, color: '#10b981', fontWeight: 700 },
+  completionHintText: { fontSize: 13, color: '#78716c', margin: 0 },
 };

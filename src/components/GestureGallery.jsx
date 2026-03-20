@@ -90,13 +90,14 @@ function EffectorCard({ id, eff, analysisData }) {
         {id === "float" && (
           <div style={{
             position: "absolute",
-            bottom: "20%",
-            left: "8%",
-            right: "8%",
-            height: 2,
-            background: "#3b82f6",
-            borderRadius: 1,
-            opacity: 0.85,
+            bottom: "18%",
+            left: "5%",
+            right: "5%",
+            height: 3,
+            background: "#2563eb",
+            borderRadius: 2,
+            zIndex: 10,
+            boxShadow: "0 0 6px rgba(37,99,235,0.5)",
           }} />
         )}
       </div>

@@ -336,7 +336,7 @@ function MappingRow({
 
       {/* Center: Character Preview */}
       <div style={styles.mappingCenter}>
-        <div style={styles.previewFrame}>
+        <div style={{ ...styles.previewFrame, position: "relative" }}>
           {currentMapping.effector === 'none' ? (
             <CharacterCanvas
               width={240}
@@ -355,6 +355,19 @@ function MappingRow({
               externalTime={musicTime}
               playing={isPlaying}
             />
+          )}
+          {currentMapping.effector === 'float' && (
+            <div style={{
+              position: "absolute",
+              bottom: "18%",
+              left: "5%",
+              right: "5%",
+              height: 3,
+              background: "#2563eb",
+              borderRadius: 2,
+              zIndex: 10,
+              boxShadow: "0 0 6px rgba(37,99,235,0.5)",
+            }} />
           )}
         </div>
       </div>
