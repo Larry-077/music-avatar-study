@@ -207,7 +207,7 @@ export default function Sketchpad({ onSave, onSkip, sessionId }) {
       tmpCtx.clearRect(0, 0, CANVAS_W, CANVAS_H);
       if (latestCanvasData[id]) tmpCtx.putImageData(latestCanvasData[id], 0, 0);
       designs[id] = {
-        sketch:      tmpCanvas.toDataURL('image/png'),
+        sketch:      tmpCanvas.toDataURL('image/jpeg', 0.6),
         description: descriptions[id],
       };
     });
