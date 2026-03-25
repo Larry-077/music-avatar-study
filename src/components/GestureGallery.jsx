@@ -10,13 +10,18 @@
 import { useState } from "react";
 import CharacterCanvas from "./CharacterCanvas";
 
+// All 6 effectors work with both continuous signals AND beat.
+// With continuous signals: arm_dance/body_pump/float/face respond smoothly;
+//   foot_tap and head_bob respond with rate proportional to signal intensity.
+// With beat: head_bob/foot_tap fire on each pulse;
+//   arm_dance/body_pump/float/face fire a one-shot burst on each beat.
 const EFFECTOR_INFO = {
-  arm_dance:  { name: "Arm Dance", description: "Arms rise and fall symmetrically", category: "continuous", icon: "🙌" },
-  body_pump:  { name: "Body Pump", description: "Body inflates and deflates with energy", category: "continuous", icon: "💪" },
-  float:      { name: "Levitate", description: "Character rises and falls vertically", category: "continuous", icon: "🎈" },
-  face:       { name: "Face Expression", description: "Eyebrows lift and mouth opens with intensity", category: "continuous", icon: "😮" },
-  head_bob:   { name: "Head Bob", description: "Head nods down on each beat pulse", category: "trigger", icon: "🎵" },
-  foot_tap:   { name: "Foot Tap", description: "Feet pulse bigger on each beat", category: "trigger", icon: "👟" },
+  arm_dance:  { name: "Arm Dance",       description: "Arms rise/fall continuously · one wave per beat",       category: "all", icon: "🙌" },
+  body_pump:  { name: "Body Pump",       description: "Body inflates/deflates continuously · one pulse per beat", category: "all", icon: "💪" },
+  float:      { name: "Levitate",        description: "Rises/falls with signal intensity · one bounce per beat", category: "all", icon: "🎈" },
+  face:       { name: "Face Expression", description: "Eyebrows/mouth open continuously · one flash per beat",  category: "all", icon: "😮" },
+  head_bob:   { name: "Head Nod",        description: "Nod rate increases with signal · one nod per beat",      category: "all", icon: "🎵" },
+  foot_tap:   { name: "Foot Tap",        description: "Tap rate increases with signal · one tap per beat",      category: "all", icon: "👟" },
 };
 
 export default function GestureGallery({ analysisData }) {

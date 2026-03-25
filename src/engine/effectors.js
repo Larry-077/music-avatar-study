@@ -3,12 +3,21 @@
  * ===================
  * Classes that take a 0.0-1.0 input and drive CharacterRig properties.
  *
- * Ported from: src/engine/effectors.py
+ * All continuous effectors now have the signature: update(value, dt, character)
+ * (dt is passed by the binder for rate-based effectors; existing ones ignore it)
+ *
+ * Two effector modes:
+ *  - "continuous" effectors: update(value, dt, character) called every frame
+ *  - "trigger" effectors: trigger() fires on beat, update(dt, character) decays
+ *
+ * For cross-type mappings:
+ *  - FootTapRate / HeadNodRate: continuous signal → rhythmic frequency
+ *  - ArmDancePulse / BodyPumpPulse / FloatPulse / FacePulse: beat → one-shot burst
  */
 
 // --- Base Class ---
 class Effector {
-  update(value, character) {}
+  update(value, dt, character) {}
 }
 
 // --- Continuous Effectors (Input: 0.0-1.0) ---
@@ -26,7 +35,7 @@ export class ArmDancer extends Effector {
     this.rangeElbow = 120.0;
   }
 
-  update(value, character) {
+  update(value, dt, character) {
     const targetShoulder = this.baseShoulder + value * this.rangeShoulder;
     const targetElbow = this.baseElbow + value * this.rangeElbow;
 
@@ -56,7 +65,7 @@ export class BodyPumper extends Effector {
     this.currentVal = 0.0;
   }
 
-  update(value, character) {
+  update(value, dt, character) {
     if (value < 0.1) value = 0.0;
     this.currentVal += (value - this.currentVal) * this.smoothing;
     const scale = this.minS + (this.maxS - this.minS) * this.currentVal;
@@ -74,7 +83,7 @@ export class Floater extends Effector {
     this.idleTime = 0.0;
   }
 
-  update(value, character) {
+  update(value, dt, character) {
     const [currentX, currentY] = [character.root.local.x, character.root.local.y];
     if (this.baseY === null) {
       this.baseY = currentY;
@@ -98,18 +107,18 @@ export class FaceExpression extends Effector {
     this.currentFaceScale = 1.0;
     this.smoothing = 0.08;
     this.maxBrowRaise = -80.0;
-    this.maxMouthScale = 2.0;   // reduced from 4.5 — keeps mouth proportional
-    this.maxFaceScale = 1.15;   // slightly enlarge face oval for "shocked" look
+    this.maxMouthScale = 2.0;
+    this.maxFaceScale = 1.15;
   }
 
-  update(value, character) {
+  update(value, dt, character) {
     if (value < 0.05) {
       value = 0.0;
     } else {
       value = (value - 0.05) / 0.95;
     }
 
-    let boostedValue = value * 1.5;  // reduced from 2.5 — ramps up more gradually
+    let boostedValue = value * 1.5;
     boostedValue = Math.min(1.0, boostedValue);
     const exaggeratedValue = Math.pow(boostedValue, 2.0);
 
@@ -122,7 +131,7 @@ export class FaceExpression extends Effector {
     this.currentFaceScale   += (targetFaceScale - this.currentFaceScale) * this.smoothing;
 
     character.setEyebrowHeight(this.currentBrowOffset);
-    character.setFaceScale(this.currentMouthScale);   // scales Mouth bone
+    character.setFaceScale(this.currentMouthScale);
     const faceBone = character.getBone?.("Face");
     if (faceBone) faceBone.setScale(this.currentFaceScale, this.currentFaceScale);
     const hatBone = character.getBone?.("Hat");
@@ -143,7 +152,7 @@ export class SimpleLipSync extends Effector {
     this.currentMouth = this.closedMouth;
   }
 
-  update(value, character) {
+  update(value, dt, character) {
     const now = performance.now() / 1000;
 
     if (value < 0.1) {
@@ -174,7 +183,98 @@ export class SimpleLipSync extends Effector {
   }
 }
 
-// --- Trigger Effectors (Input: Boolean/Pulse) ---
+// --- Rate-Based Effectors (continuous signal → rhythmic frequency) ---
+
+/**
+ * FootTapRate: continuous signal drives tapping rate.
+ * Higher value = faster foot tapping. Used when foot_tap is bound to
+ * a continuous signal (volume/pitch/timbre).
+ */
+export class FootTapRate extends Effector {
+  constructor() {
+    super();
+    this.maxFreq = 8.0;       // taps per second at max signal
+    this.tapDuration = 0.10;
+    this.phase = 0;
+    this.tapTimer = 0;
+    this.currentScale = 1.0;
+    this.maxScale = 1.8;
+    this.intensity = 1.0;
+  }
+
+  update(value, dt = 0.016, character) {
+    if (value > 0.08) {
+      // sqrt mapping: compresses low values upward so even quiet passages tap noticeably
+      const mappedValue = Math.sqrt(value);
+      const freq = mappedValue * this.maxFreq;
+      const prevFloor = Math.floor(this.phase);
+      this.phase += freq * dt;
+      // Fire a tap each time phase completes a full cycle
+      if (Math.floor(this.phase) > prevFloor) {
+        this.tapTimer = this.tapDuration;
+      }
+    } else {
+      this.phase = 0;
+    }
+
+    let targetScale = 1.0;
+    if (this.tapTimer > 0) {
+      this.tapTimer -= dt;
+      const progress = 1 - Math.max(0, this.tapTimer / this.tapDuration);
+      targetScale = 1.0 + (this.maxScale - 1.0) * this.intensity * Math.sin(progress * Math.PI);
+    }
+
+    this.currentScale += (targetScale - this.currentScale) * 0.4;
+    const feetBone = character.getBone("Feet");
+    if (feetBone) feetBone.setScale(this.currentScale, this.currentScale);
+  }
+}
+
+/**
+ * HeadNodRate: continuous signal drives nodding rate.
+ * Higher value = faster head nodding. Used when head_bob is bound to
+ * a continuous signal (volume/pitch/timbre).
+ */
+export class HeadNodRate extends Effector {
+  constructor() {
+    super();
+    this.maxFreq = 7.0;       // nods per second at max signal
+    this.nodDuration = 0.14;
+    this.phase = 0;
+    this.nodTimer = 0;
+    this.currentOffset = 0.0;
+    this.bobAmount = 40;
+    this.intensity = 1.0;
+  }
+
+  update(value, dt = 0.016, character) {
+    if (value > 0.08) {
+      // sqrt mapping: same as FootTapRate — lifts low-value signals into usable frequency range
+      const mappedValue = Math.sqrt(value);
+      const freq = mappedValue * this.maxFreq;
+      const prevFloor = Math.floor(this.phase);
+      this.phase += freq * dt;
+      // Fire a nod each time phase completes a full cycle
+      if (Math.floor(this.phase) > prevFloor) {
+        this.nodTimer = this.nodDuration;
+      }
+    } else {
+      this.phase = 0;
+    }
+
+    let targetOffset = 0.0;
+    if (this.nodTimer > 0) {
+      this.nodTimer -= dt;
+      const progress = 1 - Math.max(0, this.nodTimer / this.nodDuration);
+      targetOffset = this.bobAmount * this.intensity * Math.sin(progress * Math.PI);
+    }
+
+    this.currentOffset += (targetOffset - this.currentOffset) * 0.25;
+    character.setHeadPositionOffset(0, this.currentOffset);
+  }
+}
+
+// --- Trigger Effectors (fires on beat pulse) ---
 
 export class HeadBanger extends Effector {
   constructor() {
@@ -248,6 +348,180 @@ export class FootTapper extends Effector {
   }
 }
 
+// --- Beat-Pulse Effectors (one-shot burst on beat for normally-continuous effectors) ---
+
+/**
+ * ArmDancePulse: arms wave once on each beat.
+ * Used when arm_dance is bound to a beat/trigger signal.
+ */
+export class ArmDancePulse extends Effector {
+  constructor() {
+    super();
+    this.timer = 0;
+    this.duration = 0.4;
+    this.active = false;
+    this.intensity = 1.0;
+    this.currentShoulder = 30.0;
+    this.currentElbow = 10.0;
+  }
+
+  trigger() {
+    this.active = true;
+    this.timer = this.duration;
+  }
+
+  update(dt, character) {
+    let targetShoulder = 30.0;
+    let targetElbow = 10.0;
+    let handVariant = "rest";
+
+    if (this.active) {
+      this.timer -= dt;
+      if (this.timer <= 0) {
+        this.active = false;
+      } else {
+        const progress = 1 - (this.timer / this.duration);
+        const wave = Math.sin(progress * Math.PI) * this.intensity;
+        targetShoulder = 30 + wave * 160;
+        targetElbow = 10 + wave * 60;
+        if (wave > 0.7) handVariant = "high";
+        else if (wave > 0.35) handVariant = "open";
+        else handVariant = "curl";
+      }
+    }
+
+    this.currentShoulder += (targetShoulder - this.currentShoulder) * 0.25;
+    this.currentElbow += (targetElbow - this.currentElbow) * 0.25;
+
+    character.setArmJointRotation("left", this.currentShoulder, this.currentElbow);
+    character.setHandVariant("left", `L_hand_${handVariant}`);
+    character.setArmJointRotation("right", -this.currentShoulder, -this.currentElbow);
+    character.setHandVariant("right", `R_hand_${handVariant}`);
+  }
+}
+
+/**
+ * BodyPumpPulse: body inflates once on each beat.
+ */
+export class BodyPumpPulse extends Effector {
+  constructor() {
+    super();
+    this.timer = 0;
+    this.duration = 0.3;
+    this.active = false;
+    this.intensity = 1.0;
+    this.currentScale = 1.0;
+    this.maxScale = 1.9;
+  }
+
+  trigger() {
+    this.active = true;
+    this.timer = this.duration;
+  }
+
+  update(dt, character) {
+    let targetScale = 1.0;
+
+    if (this.active) {
+      this.timer -= dt;
+      if (this.timer <= 0) {
+        this.active = false;
+      } else {
+        const progress = 1 - (this.timer / this.duration);
+        targetScale = 1.0 + (this.maxScale - 1.0) * this.intensity * Math.sin(progress * Math.PI);
+      }
+    }
+
+    this.currentScale += (targetScale - this.currentScale) * 0.35;
+    character.setBodyScale(this.currentScale);
+  }
+}
+
+/**
+ * FloatPulse: character bounces up once on each beat.
+ */
+export class FloatPulse extends Effector {
+  constructor() {
+    super();
+    this.timer = 0;
+    this.duration = 0.45;
+    this.active = false;
+    this.intensity = 1.0;
+    this.currentOffset = 0.0;
+    this.maxBounce = 60;
+    this.baseY = null;
+  }
+
+  trigger() {
+    this.active = true;
+    this.timer = this.duration;
+  }
+
+  update(dt, character) {
+    const [currentX, currentY] = [character.root.local.x, character.root.local.y];
+    if (this.baseY === null) this.baseY = currentY;
+
+    let targetOffset = 0.0;
+    if (this.active) {
+      this.timer -= dt;
+      if (this.timer <= 0) {
+        this.active = false;
+      } else {
+        const progress = 1 - (this.timer / this.duration);
+        targetOffset = this.maxBounce * this.intensity * Math.sin(progress * Math.PI);
+      }
+    }
+
+    this.currentOffset += (targetOffset - this.currentOffset) * 0.3;
+    character.setScreenPosition(currentX, this.baseY - this.currentOffset);
+  }
+}
+
+/**
+ * FacePulse: eyebrows raise and mouth opens once on each beat.
+ */
+export class FacePulse extends Effector {
+  constructor() {
+    super();
+    this.timer = 0;
+    this.duration = 0.35;
+    this.active = false;
+    this.intensity = 1.0;
+    this.currentBrowOffset = 0.0;
+    this.currentMouthScale = 1.0;
+    this.maxBrowRaise = -60;
+    this.maxMouthScale = 1.8;
+  }
+
+  trigger() {
+    this.active = true;
+    this.timer = this.duration;
+  }
+
+  update(dt, character) {
+    let targetBrow = 0.0;
+    let targetMouthScale = 1.0;
+
+    if (this.active) {
+      this.timer -= dt;
+      if (this.timer <= 0) {
+        this.active = false;
+      } else {
+        const progress = 1 - (this.timer / this.duration);
+        const wave = Math.sin(progress * Math.PI) * this.intensity;
+        targetBrow = wave * this.maxBrowRaise;
+        targetMouthScale = 1.0 + wave * (this.maxMouthScale - 1.0);
+      }
+    }
+
+    this.currentBrowOffset += (targetBrow - this.currentBrowOffset) * 0.3;
+    this.currentMouthScale += (targetMouthScale - this.currentMouthScale) * 0.3;
+
+    character.setEyebrowHeight(this.currentBrowOffset);
+    character.setFaceScale(this.currentMouthScale);
+  }
+}
+
 // --- Custom Arm Path Effector (User-drawn trajectory) ---
 
 export class CustomArmPath extends Effector {
@@ -263,10 +537,9 @@ export class CustomArmPath extends Effector {
     this.path = pathPoints || [];
   }
 
-  update(value, character) {
+  update(value, dt, character) {
     if (this.path.length < 2) return;
 
-    // Map value (0-1) to position along path via linear interpolation
     const lastIdx = this.path.length - 1;
     const rawIdx = value * lastIdx;
     const i = Math.min(Math.floor(rawIdx), lastIdx - 1);
@@ -277,33 +550,24 @@ export class CustomArmPath extends Effector {
     const nx = p0.x + (p1.x - p0.x) * frac;
     const ny = p0.y + (p1.y - p0.y) * frac;
 
-    // Convert normalized (0-1) canvas position to arm angles
-    // Shoulder pivot is at (0.5, 0.12) in normalized space
     const dx = nx - 0.5;
     const dy = ny - 0.12;
 
-    // Angle from straight-down direction (positive = toward right)
     const angle = Math.atan2(-dx, Math.max(dy, 0.01));
-    // Map angle to shoulder rotation: down(0)→30°, right(π/2)→110°, up(π)→190°
     const clampedAngle = Math.max(-0.2, Math.min(Math.PI, angle));
     const targetShoulder = 30 + (clampedAngle / Math.PI) * 160;
 
-    // Distance from shoulder determines elbow bend
     const dist = Math.sqrt(dx * dx + dy * dy);
     const maxReach = 0.7;
     const reach = Math.min(dist / maxReach, 1.0);
-    // Extended (reach=1) → elbow=10°, bent (reach=0) → elbow=130°
     const targetElbow = 10 + (1 - reach) * 120;
 
-    // Smooth
     this.currentShoulder += (targetShoulder - this.currentShoulder) * this.smoothing;
     this.currentElbow += (targetElbow - this.currentElbow) * this.smoothing;
 
-    // Apply to both arms (mirrored)
     character.setArmJointRotation("left", this.currentShoulder, this.currentElbow);
     character.setArmJointRotation("right", -this.currentShoulder, -this.currentElbow);
 
-    // Hand variant based on reach
     let handVariant = "rest";
     if (reach > 0.8) handVariant = "high";
     else if (reach > 0.4) handVariant = "open";

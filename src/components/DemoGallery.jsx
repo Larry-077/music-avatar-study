@@ -48,14 +48,39 @@ const MUSIC_CLIPS = [
   },
 ];
 
-// All effectors; category determines which tab shows them
+// All 6 effectors — shown for every signal type.
+// Descriptions vary by context: continuous signals vs beat.
 const DEMO_EFFECTORS = [
-  { id: "arm_dance", name: "Arm Dance",      icon: "🙌", category: "continuous", desc: "Arms rise and fall with the signal intensity" },
-  { id: "body_pump", name: "Body Pump",       icon: "💪", category: "continuous", desc: "Body inflates and deflates with energy level" },
-  { id: "float",     name: "Levitate",        icon: "🎈", category: "continuous", desc: "Character rises and falls vertically" },
-  { id: "face",      name: "Face Expression", icon: "😮", category: "continuous", desc: "Eyebrows and mouth open with signal intensity" },
-  { id: "head_bob",  name: "Head Bob",        icon: "🎵", category: "trigger",    desc: "Head nods on each rhythmic pulse" },
-  { id: "foot_tap",  name: "Foot Tap",        icon: "👟", category: "trigger",    desc: "Feet pulse bigger on each beat" },
+  {
+    id: "arm_dance", name: "Arm Dance", icon: "🙌",
+    continuousDesc: "Arms rise and fall smoothly with signal intensity",
+    beatDesc: "Arms wave once on each rhythmic beat",
+  },
+  {
+    id: "body_pump", name: "Body Pump", icon: "💪",
+    continuousDesc: "Body inflates and deflates continuously with energy",
+    beatDesc: "Body pulses bigger once per beat",
+  },
+  {
+    id: "float", name: "Levitate", icon: "🎈",
+    continuousDesc: "Character rises and falls with the signal level",
+    beatDesc: "Character bounces up once on each beat",
+  },
+  {
+    id: "face", name: "Face Expression", icon: "😮",
+    continuousDesc: "Eyebrows and mouth open with signal intensity",
+    beatDesc: "Eyebrows raise and mouth opens once per beat",
+  },
+  {
+    id: "head_bob", name: "Head Nod", icon: "🎵",
+    continuousDesc: "Nod rate increases as signal gets stronger",
+    beatDesc: "Head nods once on each rhythmic pulse",
+  },
+  {
+    id: "foot_tap", name: "Foot Tap", icon: "👟",
+    continuousDesc: "Tap rate increases as signal gets louder/brighter",
+    beatDesc: "Feet pulse bigger once on each beat",
+  },
 ];
 
 export default function DemoGallery({ onNext }) {
@@ -104,11 +129,9 @@ export default function DemoGallery({ onNext }) {
   const fmtTime = (s) => `${Math.floor(s)}:${String(Math.floor((s % 1) * 60)).padStart(2, '0')}`;
   const progress = duration > 0 ? (currentTime / duration) * 100 : 0;
 
-  // Filter effectors based on selected clip
+  // All 6 effectors shown for every signal type
   const isBeat = selectedClip.id === 'beat';
-  const visibleEffectors = isBeat
-    ? DEMO_EFFECTORS.filter(e => e.category === 'trigger')
-    : DEMO_EFFECTORS.filter(e => e.category === 'continuous');
+  const visibleEffectors = DEMO_EFFECTORS;
 
   return (
     <div style={styles.section}>
@@ -183,16 +206,16 @@ export default function DemoGallery({ onNext }) {
         <div style={styles.loadingRow}>Loading analysis...</div>
       )}
 
-      {/* Effector cards */}
+      {/* Effector cards — all 6 for every signal type */}
       {analysisData && (
         <>
           <h3 style={styles.catLabel}>
-            {isBeat ? 'Beat-Driven Movements' : `${selectedClip.label}-Driven Movements`}
+            6 Movements driven by {selectedClip.label}
           </h3>
           <p style={styles.catDesc}>
             {isBeat
-              ? 'These trigger a discrete movement on each rhythmic pulse in the audio.'
-              : `These respond smoothly and continuously to the ${selectedClip.label.toLowerCase()} signal.`}
+              ? 'All movements respond to the beat. Head Nod and Foot Tap fire once per pulse; the other four burst on each beat.'
+              : `All movements respond to the ${selectedClip.label.toLowerCase()} signal. Head Nod and Foot Tap use frequency (faster = stronger signal); the other four respond smoothly.`}
           </p>
           <div style={styles.cardGrid}>
             {visibleEffectors.map(eff => (
@@ -203,8 +226,8 @@ export default function DemoGallery({ onNext }) {
                 externalTime={currentTime}
                 playing={isPlaying}
                 accentColor={selectedClip.color}
-                // Continuous effectors use the currently selected clip's signal
-                musicType={eff.category === 'trigger' ? 'beat' : selectedClip.id}
+                musicType={selectedClip.id}
+                isBeat={isBeat}
               />
             ))}
           </div>
@@ -226,7 +249,12 @@ export default function DemoGallery({ onNext }) {
   );
 }
 
-function DemoCard({ eff, analysisData, externalTime, playing, accentColor, musicType }) {
+function DemoCard({ eff, analysisData, externalTime, playing, accentColor, musicType, isBeat }) {
+  const desc = isBeat ? eff.beatDesc : eff.continuousDesc;
+  const modeLabel = isBeat
+    ? (eff.id === 'head_bob' || eff.id === 'foot_tap' ? 'beat pulse' : 'beat burst')
+    : (eff.id === 'head_bob' || eff.id === 'foot_tap' ? 'rate-based' : 'continuous');
+
   return (
     <div style={styles.card}>
       <div style={styles.cardCanvas}>
@@ -245,9 +273,9 @@ function DemoCard({ eff, analysisData, externalTime, playing, accentColor, music
         <span style={styles.cardIcon}>{eff.icon}</span>
         <span style={styles.cardName}>{eff.name}</span>
       </div>
-      <p style={styles.cardDesc}>{eff.desc}</p>
+      <p style={styles.cardDesc}>{desc}</p>
       <div style={{ ...styles.cardTag, borderColor: accentColor, color: accentColor }}>
-        {musicType}
+        {modeLabel}
       </div>
     </div>
   );

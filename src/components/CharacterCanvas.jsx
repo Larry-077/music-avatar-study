@@ -124,8 +124,9 @@ export default function CharacterCanvas({
 
       const t = externalTime !== null ? externalTime : timeRef.current;
 
-      // Update engine if available
-      if (engine && character) {
+      // Update engine only while playing — prevents frozen last-frame signal
+      // persisting after audio ends
+      if (playing && engine && character) {
         engine.update(t, dt, character);
       }
 

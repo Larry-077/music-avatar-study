@@ -57,13 +57,8 @@ const MUSIC_ELEMENTS = [
   },
 ];
 
-const CONTINUOUS_EFFECTORS = Object.entries(EFFECTOR_INFO)
-  .filter(([, e]) => e.category === "continuous")
-  .map(([k]) => k);
-
-const TRIGGER_EFFECTORS = Object.entries(EFFECTOR_INFO)
-  .filter(([, e]) => e.category === "trigger")
-  .map(([k]) => k);
+// All 6 effectors available for every music element
+const ALL_EFFECTORS = Object.keys(EFFECTOR_INFO);
 
 export default function MappingStudio({
   mappings,
@@ -300,8 +295,8 @@ function MappingRow({
     logEvent(sessionId, 'audio_reset', { musicElement: elem.id, timestamp: Date.now() });
   };
 
-  const baseEffectors = elem.type === "trigger" ? TRIGGER_EFFECTORS : CONTINUOUS_EFFECTORS;
-  const availableEffectors = ['none', ...baseEffectors];
+  // All 6 effectors available regardless of signal type
+  const availableEffectors = ['none', ...ALL_EFFECTORS];
 
   return (
     <div style={{
@@ -370,6 +365,11 @@ function MappingRow({
       {/* Right: Effector selection + intensity + confirm */}
       <div style={styles.mappingRight}>
         <label style={styles.controlLabel}>Movement Type</label>
+        <p style={styles.effectorHint}>
+          {elem.type === "trigger"
+            ? "Head Nod & Foot Tap fire once per beat · others burst on beat"
+            : "Head Nod & Foot Tap speed up with signal · others respond smoothly"}
+        </p>
         <div style={styles.effectorChips}>
           {availableEffectors.map((eid) => {
             const eff = eid === 'none'
@@ -544,6 +544,7 @@ const styles = {
     fontSize: 12, fontWeight: 600, color: "#78716c", textTransform: "uppercase",
     letterSpacing: "0.05em", display: "block", marginBottom: 8,
   },
+  effectorHint: { fontSize: 11, color: "#a8a29e", margin: "0 0 10px", lineHeight: 1.5, fontStyle: "italic" },
   effectorChips: { display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 20 },
   chip: {
     padding: "8px 14px", fontSize: 13, fontWeight: 600,
