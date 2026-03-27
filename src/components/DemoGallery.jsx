@@ -32,7 +32,7 @@ const MUSIC_CLIPS = [
   },
   {
     id: "timbre", label: "Timbre", color: "#8b5cf6",
-    audioUrl: "/assets/audio/timbre.wav",
+    audioUrl: "/assets/audio/timbre_new.wav",
     analysisUrl: "/assets/analysis/timbre.json",
     desc: "Texture and color of sound",
     lowLabel: "Warm / Mellow ", highLabel: "Bright / Sharp ",
@@ -40,7 +40,7 @@ const MUSIC_CLIPS = [
   },
   {
     id: "beat", label: "Beat", color: "#ef4444",
-    audioUrl: "/assets/audio/beat.wav",
+    audioUrl: "/assets/audio/beat_new.wav",
     analysisUrl: "/assets/analysis/beat.json",
     desc: "Rhythmic pulse",
     lowLabel: "Steady pulse ", highLabel: "Driving pulse ",
@@ -54,32 +54,32 @@ const DEMO_EFFECTORS = [
   {
     id: "arm_dance", name: "Arm Dance", icon: "🙌",
     continuousDesc: "Arms rise and fall smoothly with signal intensity",
-    beatDesc: "Arms wave once on each rhythmic beat",
+    beatDesc: "Arms held higher when beat frequency is faster",
   },
   {
     id: "body_pump", name: "Body Pump", icon: "💪",
     continuousDesc: "Body inflates and deflates continuously with energy",
-    beatDesc: "Body pulses bigger once per beat",
+    beatDesc: "Body inflates more when beat frequency is faster",
   },
   {
     id: "float", name: "Levitate", icon: "🎈",
     continuousDesc: "Character rises and falls with the signal level",
-    beatDesc: "Character bounces up once on each beat",
+    beatDesc: "Character floats higher when beat frequency is faster",
   },
   {
     id: "face", name: "Face Expression", icon: "😮",
     continuousDesc: "Eyebrows and mouth open with signal intensity",
-    beatDesc: "Eyebrows raise and mouth opens once per beat",
+    beatDesc: "Expression intensity grows with faster beat frequency",
   },
   {
     id: "head_bob", name: "Head Nod", icon: "🎵",
     continuousDesc: "Nod rate increases as signal gets stronger",
-    beatDesc: "Head nods once on each rhythmic pulse",
+    beatDesc: "Nod rate speeds up with faster beat frequency",
   },
   {
     id: "foot_tap", name: "Foot Tap", icon: "👟",
     continuousDesc: "Tap rate increases as signal gets louder/brighter",
-    beatDesc: "Feet pulse bigger once on each beat",
+    beatDesc: "Tap rate speeds up with faster beat frequency",
   },
 ];
 
@@ -214,7 +214,7 @@ export default function DemoGallery({ onNext }) {
           </h3>
           <p style={styles.catDesc}>
             {isBeat
-              ? 'All movements respond to the beat. Head Nod and Foot Tap fire once per pulse; the other four burst on each beat.'
+              ? 'All movements respond to beat frequency. Faster beats = higher arms, bigger body, higher levitate, stronger expression, faster nod and tap.'
               : `All movements respond to the ${selectedClip.label.toLowerCase()} signal. Head Nod and Foot Tap use frequency (faster = stronger signal); the other four respond smoothly.`}
           </p>
           <div style={styles.cardGrid}>
@@ -252,7 +252,7 @@ export default function DemoGallery({ onNext }) {
 function DemoCard({ eff, analysisData, externalTime, playing, accentColor, musicType, isBeat }) {
   const desc = isBeat ? eff.beatDesc : eff.continuousDesc;
   const modeLabel = isBeat
-    ? (eff.id === 'head_bob' || eff.id === 'foot_tap' ? 'beat pulse' : 'beat burst')
+    ? (eff.id === 'head_bob' || eff.id === 'foot_tap' ? 'beat frequency' : 'beat frequency')
     : (eff.id === 'head_bob' || eff.id === 'foot_tap' ? 'rate-based' : 'continuous');
 
   return (

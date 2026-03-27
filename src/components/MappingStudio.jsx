@@ -40,7 +40,7 @@ const MUSIC_ELEMENTS = [
     name: "Timbre",
     description: "The texture and color of sound",
     detailedDesc: "Feel the timbre shift from bright and clear to warm and soft",
-    audioUrl: "/assets/audio/timbre.wav",
+    audioUrl: "/assets/audio/timbre_new.wav",
     analysisUrl: "/assets/analysis/timbre.json",
     type: "continuous",
     color: "#8b5cf6"
@@ -50,7 +50,7 @@ const MUSIC_ELEMENTS = [
     name: "Beat",
     description: "The pulse and rhythm of music",
     detailedDesc: "Follow the strong rhythmic pulse",
-    audioUrl: "/assets/audio/beat.wav",
+    audioUrl: "/assets/audio/beat_new.wav",
     analysisUrl: "/assets/analysis/beat.json",
     type: "trigger",
     color: "#ef4444"

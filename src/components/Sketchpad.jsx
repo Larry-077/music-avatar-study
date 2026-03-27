@@ -17,9 +17,9 @@ const MUSIC_ELEMENTS = [
   { id: 'pitch',  name: 'Pitch',  description: 'The rise and fall of musical notes',
     url: '/assets/audio/pitch.wav',  color: '#10b981' },
   { id: 'timbre', name: 'Timbre', description: 'The texture and colour of sound — bright or warm',
-    url: '/assets/audio/timbre.wav', color: '#8b5cf6' },
+    url: '/assets/audio/timbre_new.wav', color: '#8b5cf6' },
   { id: 'beat',   name: 'Beat',   description: 'The rhythmic pulse that drives the music',
-    url: '/assets/audio/beat.wav',   color: '#ef4444' },
+    url: '/assets/audio/beat_new.wav',   color: '#ef4444' },
 ];
 
 const COLOR_OPTIONS = [
