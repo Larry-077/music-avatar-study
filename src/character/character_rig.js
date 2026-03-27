@@ -191,7 +191,7 @@ export class CharacterRig {
     // --- LEFT ARM: Shoulder -> Elbow -> Hand ---
     const shoulderL = body.addChild(
       new Bone("Shoulder_L",
-        new Transform(-bodyHalfW + 14 + 5, -44, 30),
+        new Transform(-bodyHalfW + 14+10, -44, 30),
         this.lArmUpperSprite,
         [0.6, 0.2]
       )
@@ -205,7 +205,7 @@ export class CharacterRig {
     );
     elbowL.addChild(
       new Bone("Hand_L",
-        new Transform(11, lForearmH - 16),
+        new Transform(-5, lForearmH - 16),
         this.lHandVariants.getSprite(),
         [0.5, 0.5]
       )
@@ -214,7 +214,7 @@ export class CharacterRig {
     // --- RIGHT ARM: Shoulder -> Elbow -> Hand ---
     const shoulderR = body.addChild(
       new Bone("Shoulder_R",
-        new Transform(bodyHalfW - 18 - 5, -40, -30),
+        new Transform(bodyHalfW - 18 - 10, -40, -30),
         this.rArmUpperSprite,
         [0.4, 0.2]
       )
@@ -228,7 +228,7 @@ export class CharacterRig {
     );
     elbowR.addChild(
       new Bone("Hand_R",
-        new Transform(-11, rForearmH - 16),
+        new Transform(5, rForearmH - 16),
         this.rHandVariants.getSprite(),
         [0.5, 0.5]
       )

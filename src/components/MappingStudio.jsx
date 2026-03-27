@@ -341,7 +341,7 @@ function MappingRow({
               analysisData={analysisData}
               effectorId={currentMapping.effector}
               musicType={elem.id}
-              intensity={currentMapping.intensity}
+              intensity={currentMapping.intensity * 1.6}
               externalTime={musicTime}
               playing={isPlaying}
             />

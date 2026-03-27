@@ -29,12 +29,12 @@ export class ArmDancer extends Effector {
     this.currentElbow = 0.0;
     this.smoothing = smoothing;
 
-    // at value=0: shoulder≈10°  at value=1: shoulder≈65°
-    // at median pitch (≈0.77): shoulder≈52°  — arms at comfortable mid-height
-    this.baseShoulder = 10.0;
-    this.baseElbow = 3.0;
-    this.rangeShoulder = 55.0;
-    this.rangeElbow = 30.0;
+    // at value=0: shoulder≈15°  at value=1: shoulder≈105°
+    // at median pitch (≈0.77): shoulder≈84°  — arms at comfortable mid-height
+    this.baseShoulder = 15.0;
+    this.baseElbow = 5.0;
+    this.rangeShoulder = 90.0;
+    this.rangeElbow = 60.0;
   }
 
   update(value, dt, character) {
@@ -42,8 +42,7 @@ export class ArmDancer extends Effector {
     const targetElbow = this.baseElbow + value * this.rangeElbow;
 
     let handVariant = "rest";
-    if (value > 0.85) handVariant = "high";
-    else if (value > 0.4) handVariant = "open";
+    if (value > 0.4) handVariant = "open";
     else if (value > 0.1) handVariant = "curl";
 
     // Exponential moving average smoothing

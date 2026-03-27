@@ -31,10 +31,10 @@ export default function App() {
   const [customIntentionText, setCustomIntentionText] = useState(null);
 
   const [mappings, setMappings] = useState({
-    volume: { effector: 'none', intensity: 0.7 },
-    pitch:  { effector: 'none', intensity: 0.7 },
-    timbre: { effector: 'none', intensity: 0.7 },
-    beat:   { effector: 'none', intensity: 0.7 },
+    volume: { effector: 'none', intensity: 0.5 },
+    pitch:  { effector: 'none', intensity: 0.5 },
+    timbre: { effector: 'none', intensity: 0.5 },
+    beat:   { effector: 'none', intensity: 0.5 },
   });
 
   // Lifted from MappingStudio so it persists when navigating to page 3 and back

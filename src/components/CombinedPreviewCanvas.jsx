@@ -98,7 +98,7 @@ export default function CombinedPreviewCanvas({
       engine.clearBindings();
 
       for (const [signal, m] of activeMappings) {
-        engine.setBinding(signal, m.effector, m.intensity);
+        engine.setBinding(signal, m.effector, m.intensity * 1.6);
       }
 
       engineRef.current = engine;
