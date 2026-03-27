@@ -29,10 +29,12 @@ export class ArmDancer extends Effector {
     this.currentElbow = 0.0;
     this.smoothing = smoothing;
 
-    this.baseShoulder = 30.0;
-    this.baseElbow = 10.0;
-    this.rangeShoulder = 160.0;
-    this.rangeElbow = 120.0;
+    // Reduced range so arms stay at a natural mid-height.
+    // at value=0: shoulder≈15°, at value=1: shoulder≈105°  (was 30→190°)
+    this.baseShoulder = 15.0;
+    this.baseElbow = 5.0;
+    this.rangeShoulder = 90.0;
+    this.rangeElbow = 60.0;
   }
 
   update(value, dt, character) {

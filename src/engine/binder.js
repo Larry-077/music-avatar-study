@@ -10,7 +10,7 @@
  *  - foot_tap/head_bob always use rate-based effectors (frequency proportional to signal)
  */
 
-import { ContinuousSignal, TriggerSignal, BeatFrequencySignal } from "./signals.js";
+import { ContinuousSignal, TriggerSignal } from "./signals.js";
 import {
   ArmDancer,
   BodyPumper,
@@ -52,8 +52,12 @@ export class BindingEngine {
       pitch: new ContinuousSignal(analysisData.continuous.pitch, fps),
       timbre: new ContinuousSignal(analysisData.continuous.timbre, fps),
       beat: new TriggerSignal(analysisData.triggers.beats),
-      // Beat frequency: converts beat timestamps → continuous 0-1 amplitude value
-      beat_freq: new BeatFrequencySignal(analysisData.triggers.beats),
+      // Pre-computed smooth beat-frequency signal (stored in JSON by analyzer).
+      // Falls back to a flat 0.5 if the field is absent from older JSON files.
+      beat_freq: new ContinuousSignal(
+        analysisData.continuous.beat_freq ?? [],
+        fps
+      ),
     };
 
     // 2. Create Available Effectors
